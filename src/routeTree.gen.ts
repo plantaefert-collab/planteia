@@ -9,38 +9,258 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSignupRouteImport } from './routes/auth.signup'
+import { Route as AuthRecoverRouteImport } from './routes/auth.recover'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AppProdutosRouteImport } from './routes/app.produtos'
+import { Route as AppPlantasRouteImport } from './routes/app.plantas'
+import { Route as AppPerfilRouteImport } from './routes/app.perfil'
+import { Route as AppJardineiroRouteImport } from './routes/app.jardineiro'
+import { Route as AppInicioRouteImport } from './routes/app.inicio'
+import { Route as AppDiarioRouteImport } from './routes/app.diario'
+import { Route as AppDiagnosticoRouteImport } from './routes/app.diagnostico'
+import { Route as AppCalendarioRouteImport } from './routes/app.calendario'
+import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas.nova'
+import { Route as AppPlantasIdRouteImport } from './routes/app.plantas.$id'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRecoverRoute = AuthRecoverRouteImport.update({
+  id: '/recover',
+  path: '/recover',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppProdutosRoute = AppProdutosRouteImport.update({
+  id: '/produtos',
+  path: '/produtos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlantasRoute = AppPlantasRouteImport.update({
+  id: '/plantas',
+  path: '/plantas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPerfilRoute = AppPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppJardineiroRoute = AppJardineiroRouteImport.update({
+  id: '/jardineiro',
+  path: '/jardineiro',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInicioRoute = AppInicioRouteImport.update({
+  id: '/inicio',
+  path: '/inicio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiarioRoute = AppDiarioRouteImport.update({
+  id: '/diario',
+  path: '/diario',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiagnosticoRoute = AppDiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarioRoute = AppCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlantasNovaRoute = AppPlantasNovaRouteImport.update({
+  id: '/nova',
+  path: '/nova',
+  getParentRoute: () => AppPlantasRoute,
+} as any)
+const AppPlantasIdRoute = AppPlantasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPlantasRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/app/calendario': typeof AppCalendarioRoute
+  '/app/diagnostico': typeof AppDiagnosticoRoute
+  '/app/diario': typeof AppDiarioRoute
+  '/app/inicio': typeof AppInicioRoute
+  '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/perfil': typeof AppPerfilRoute
+  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/produtos': typeof AppProdutosRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/recover': typeof AuthRecoverRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/app/plantas/$id': typeof AppPlantasIdRoute
+  '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/app/calendario': typeof AppCalendarioRoute
+  '/app/diagnostico': typeof AppDiagnosticoRoute
+  '/app/diario': typeof AppDiarioRoute
+  '/app/inicio': typeof AppInicioRoute
+  '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/perfil': typeof AppPerfilRoute
+  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/produtos': typeof AppProdutosRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/recover': typeof AuthRecoverRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/app/plantas/$id': typeof AppPlantasIdRoute
+  '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/app/calendario': typeof AppCalendarioRoute
+  '/app/diagnostico': typeof AppDiagnosticoRoute
+  '/app/diario': typeof AppDiarioRoute
+  '/app/inicio': typeof AppInicioRoute
+  '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/perfil': typeof AppPerfilRoute
+  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/produtos': typeof AppProdutosRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/recover': typeof AuthRecoverRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/app/plantas/$id': typeof AppPlantasIdRoute
+  '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/onboarding'
+    | '/app/calendario'
+    | '/app/diagnostico'
+    | '/app/diario'
+    | '/app/inicio'
+    | '/app/jardineiro'
+    | '/app/perfil'
+    | '/app/plantas'
+    | '/app/produtos'
+    | '/auth/login'
+    | '/auth/recover'
+    | '/auth/signup'
+    | '/app/plantas/$id'
+    | '/app/plantas/nova'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/onboarding'
+    | '/app/calendario'
+    | '/app/diagnostico'
+    | '/app/diario'
+    | '/app/inicio'
+    | '/app/jardineiro'
+    | '/app/perfil'
+    | '/app/plantas'
+    | '/app/produtos'
+    | '/auth/login'
+    | '/auth/recover'
+    | '/auth/signup'
+    | '/app/plantas/$id'
+    | '/app/plantas/nova'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/onboarding'
+    | '/app/calendario'
+    | '/app/diagnostico'
+    | '/app/diario'
+    | '/app/inicio'
+    | '/app/jardineiro'
+    | '/app/perfil'
+    | '/app/plantas'
+    | '/app/produtos'
+    | '/auth/login'
+    | '/auth/recover'
+    | '/auth/signup'
+    | '/app/plantas/$id'
+    | '/app/plantas/nova'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +268,158 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/recover': {
+      id: '/auth/recover'
+      path: '/recover'
+      fullPath: '/auth/recover'
+      preLoaderRoute: typeof AuthRecoverRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/app/produtos': {
+      id: '/app/produtos'
+      path: '/produtos'
+      fullPath: '/app/produtos'
+      preLoaderRoute: typeof AppProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/plantas': {
+      id: '/app/plantas'
+      path: '/plantas'
+      fullPath: '/app/plantas'
+      preLoaderRoute: typeof AppPlantasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/perfil': {
+      id: '/app/perfil'
+      path: '/perfil'
+      fullPath: '/app/perfil'
+      preLoaderRoute: typeof AppPerfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/jardineiro': {
+      id: '/app/jardineiro'
+      path: '/jardineiro'
+      fullPath: '/app/jardineiro'
+      preLoaderRoute: typeof AppJardineiroRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/inicio': {
+      id: '/app/inicio'
+      path: '/inicio'
+      fullPath: '/app/inicio'
+      preLoaderRoute: typeof AppInicioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/diario': {
+      id: '/app/diario'
+      path: '/diario'
+      fullPath: '/app/diario'
+      preLoaderRoute: typeof AppDiarioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/diagnostico': {
+      id: '/app/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/app/diagnostico'
+      preLoaderRoute: typeof AppDiagnosticoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/calendario': {
+      id: '/app/calendario'
+      path: '/calendario'
+      fullPath: '/app/calendario'
+      preLoaderRoute: typeof AppCalendarioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/plantas/nova': {
+      id: '/app/plantas/nova'
+      path: '/nova'
+      fullPath: '/app/plantas/nova'
+      preLoaderRoute: typeof AppPlantasNovaRouteImport
+      parentRoute: typeof AppPlantasRoute
+    }
+    '/app/plantas/$id': {
+      id: '/app/plantas/$id'
+      path: '/$id'
+      fullPath: '/app/plantas/$id'
+      preLoaderRoute: typeof AppPlantasIdRouteImport
+      parentRoute: typeof AppPlantasRoute
+    }
   }
 }
 
+interface AppPlantasRouteChildren {
+  AppPlantasIdRoute: typeof AppPlantasIdRoute
+  AppPlantasNovaRoute: typeof AppPlantasNovaRoute
+}
+
+const AppPlantasRouteChildren: AppPlantasRouteChildren = {
+  AppPlantasIdRoute: AppPlantasIdRoute,
+  AppPlantasNovaRoute: AppPlantasNovaRoute,
+}
+
+const AppPlantasRouteWithChildren = AppPlantasRoute._addFileChildren(
+  AppPlantasRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppCalendarioRoute: typeof AppCalendarioRoute
+  AppDiagnosticoRoute: typeof AppDiagnosticoRoute
+  AppDiarioRoute: typeof AppDiarioRoute
+  AppInicioRoute: typeof AppInicioRoute
+  AppJardineiroRoute: typeof AppJardineiroRoute
+  AppPerfilRoute: typeof AppPerfilRoute
+  AppPlantasRoute: typeof AppPlantasRouteWithChildren
+  AppProdutosRoute: typeof AppProdutosRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCalendarioRoute: AppCalendarioRoute,
+  AppDiagnosticoRoute: AppDiagnosticoRoute,
+  AppDiarioRoute: AppDiarioRoute,
+  AppInicioRoute: AppInicioRoute,
+  AppJardineiroRoute: AppJardineiroRoute,
+  AppPerfilRoute: AppPerfilRoute,
+  AppPlantasRoute: AppPlantasRouteWithChildren,
+  AppProdutosRoute: AppProdutosRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface AuthRouteChildren {
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRecoverRoute: typeof AuthRecoverRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRecoverRoute: AuthRecoverRoute,
+  AuthSignupRoute: AuthSignupRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
