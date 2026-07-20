@@ -81,6 +81,9 @@ export const diagnosisService = {
       immediateActions: scenario.whatToDo,
       avoid: scenario.whatToAvoid,
       urgencySigns: scenario.alertSigns,
+      whatToObserve: scenario.whatToObserve,
+      improvementSigns: scenario.improvementSigns,
+      careTimeline: scenario.timeline,
       reevaluateInDays: 7,
     };
   },
