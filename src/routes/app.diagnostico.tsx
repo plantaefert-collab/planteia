@@ -110,7 +110,7 @@ function DiagnosisPage() {
     setSelected(p);
     navigate({ 
       to: "/app/diagnostico", 
-      search: (prev) => ({ ...prev, plantId: p?.id }) 
+      search: (prev: any) => ({ ...prev, plantId: p?.id }) 
     });
     setStep("objective");
   };
