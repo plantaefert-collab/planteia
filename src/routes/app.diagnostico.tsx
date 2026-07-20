@@ -300,6 +300,7 @@ function DiagnosisPage() {
               symptom={symptom} 
               answers={answers} 
               onChange={(id, val) => setAnswers(prev => ({ ...prev, [id]: val }))} 
+
             />
 
             <Button className="w-full h-12 text-base" onClick={nextStep}>
