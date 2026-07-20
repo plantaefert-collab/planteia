@@ -174,39 +174,66 @@ export const mockProducts: Product[] = [
   },
 ];
 
-export const mockDiagnosis: Diagnosis = {
-  id: "d1",
-  plantId: "p1",
-  createdAt: addDays(0),
-  status: "atencao",
-  mainSuspicion: "Excesso de umidade nas raízes",
-  confidence: "moderada",
-  observedSigns: [
-    "Folhas amolecidas e amareladas na base",
-    "Substrato encharcado",
-    "Algumas raízes escurecidas",
-  ],
-  otherPossibilities: [
-    "Deficiência de nutrientes",
-    "Baixa luminosidade prolongada",
-  ],
-  immediateActions: [
-    "Retirar do vaso e inspecionar as raízes",
-    "Cortar raízes escuras com tesoura esterilizada",
-    "Deixar secar ao ar por algumas horas",
-    "Replantar em substrato para orquídeas bem drenado",
-  ],
-  avoid: [
-    "Regar novamente antes do substrato secar",
-    "Deixar em local sem circulação de ar",
-  ],
-  urgencySigns: [
-    "Coleto (base) amolecido e escuro",
-    "Odor forte no substrato",
-    "Folhas caindo em sequência",
-  ],
-  reevaluateInDays: 7,
+export const mockDiagnosesByPlant: Record<string, Diagnosis> = {
+  p1: {
+    id: "d-p1",
+    plantId: "p1",
+    createdAt: addDays(-4),
+    status: "atencao",
+    mainSuspicion: "Excesso de umidade nas raízes",
+    confidence: "moderada",
+    observedSigns: [
+      "Folhas amolecidas e amareladas na base",
+      "Substrato encharcado",
+      "Algumas raízes escurecidas",
+    ],
+    otherPossibilities: [
+      "Deficiência de nutrientes",
+      "Baixa luminosidade prolongada",
+    ],
+    immediateActions: [
+      "Retirar do vaso e inspecionar as raízes",
+      "Cortar raízes escuras com tesoura esterilizada",
+      "Deixar secar ao ar por algumas horas",
+      "Replantar em substrato para orquídeas bem drenado",
+    ],
+    avoid: [
+      "Regar novamente antes do substrato secar",
+      "Deixar em local sem circulação de ar",
+    ],
+    urgencySigns: [
+      "Coleto (base) amolecido e escuro",
+      "Odor forte no substrato",
+      "Folhas caindo em sequência",
+    ],
+    reevaluateInDays: 3,
+  },
+  p3: {
+    id: "d-p3",
+    plantId: "p3",
+    createdAt: addDays(-10),
+    status: "acompanhamento",
+    mainSuspicion: "Baixa umidade do ar",
+    confidence: "alta",
+    observedSigns: [
+      "Pontas das folhas ressecadas",
+      "Perda leve de folíolos",
+    ],
+    otherPossibilities: ["Ventilação excessiva", "Rega irregular"],
+    immediateActions: [
+      "Borrifar água filtrada nas folhas 2x ao dia",
+      "Agrupar com outras plantas para aumentar umidade local",
+      "Manter longe de ar-condicionado",
+    ],
+    avoid: ["Sol direto do meio-dia", "Substrato encharcado"],
+    urgencySigns: ["Folhas totalmente marrons", "Queda maciça de folíolos"],
+    reevaluateInDays: 14,
+  },
+  // p2 (Rosa-do-deserto) intencionalmente sem diagnóstico
 };
+
+export const mockDiagnosis: Diagnosis = mockDiagnosesByPlant.p1;
+
 
 export const mockChat: ChatMessage[] = [
   {
