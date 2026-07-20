@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WireframeRouteImport } from './routes/wireframe'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -28,6 +29,11 @@ import { Route as AppCalendarioRouteImport } from './routes/app.calendario'
 import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas.nova'
 import { Route as AppPlantasIdRouteImport } from './routes/app.plantas.$id'
 
+const WireframeRoute = WireframeRouteImport.update({
+  id: '/wireframe',
+  path: '/wireframe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/wireframe': typeof WireframeRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/wireframe': typeof WireframeRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/wireframe': typeof WireframeRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/onboarding'
+    | '/wireframe'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/wireframe'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/onboarding'
+    | '/wireframe'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -246,10 +258,18 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  WireframeRoute: typeof WireframeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wireframe': {
+      id: '/wireframe'
+      path: '/wireframe'
+      fullPath: '/wireframe'
+      preLoaderRoute: typeof WireframeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -438,6 +458,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  WireframeRoute: WireframeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
