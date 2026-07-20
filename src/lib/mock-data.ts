@@ -242,8 +242,9 @@ export type SymptomId =
 export interface DiagnosisScenario {
   id: string;
   title: string;
-  confidence: "baixa" | "moderada" | "alta";
+  confidence: Confidence;
   priority: "orientacao_preventiva" | "observacao" | "atencao" | "acao_prioritaria" | "investigacao_necessaria";
+
   why: string[];
   whatToDo: string[];
   whatToAvoid: string[];
