@@ -145,10 +145,8 @@ function DiagnosisPage() {
                 </button>
               ))}
               <button
-                onClick={() => {
-                  setSelected(null);
-                  setStep("photos");
-                }}
+                onClick={pickNewPlant}
+
                 className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-card p-3 text-left transition hover:border-leaf"
               >
                 <div className="grid h-12 w-12 place-items-center rounded-lg bg-leaf-soft text-leaf">
