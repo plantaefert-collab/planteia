@@ -1,60 +1,150 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { plantsService, tasksService, timelineService } from "@/lib/services";
+import {
+  diagnosisService,
+  plantsService,
+  tasksService,
+  timelineService,
+} from "@/lib/services";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CareTaskCard } from "@/components/CareTaskCard";
+import { Progress } from "@/components/ui/progress";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { CareTaskCard } from "@/components/CareTaskCard";
+import { EmptyState } from "@/components/EmptyState";
+import { toast } from "sonner";
+import {
+  AlertTriangle,
   ArrowLeft,
   Camera,
   Droplets,
+  FileText,
   Home,
   MessageCircle,
   Sprout,
+  Stethoscope,
   Sun,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Plant, PlantStatus } from "@/lib/types";
+import type { CareTask, Diagnosis, Plant, TimelineEntry } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/app/plantas/$id")({
   head: () => ({ meta: [{ title: `Planta · Plantae AI` }] }),
   component: PlantDetail,
   notFoundComponent: PlantNotFound,
+  errorComponent: PlantError,
 });
 
-function mainAction(status: PlantStatus): { label: string; tone: "leaf" | "warning" | "danger" } {
-  switch (status) {
-    case "saudavel":
-      return { label: "Ver plano de cuidados", tone: "leaf" };
-    case "atencao":
-      return { label: "Atualizar diagnóstico", tone: "warning" };
-    case "acompanhamento":
-      return { label: "Acompanhar evolução", tone: "leaf" };
-    default:
-      return { label: "Fazer primeiro diagnóstico", tone: "leaf" };
+type TabKey = "visao" | "diag" | "plano" | "hist";
+type ActionKind = "diagnostico" | "plano" | "historico";
+interface MainAction {
+  label: string;
+  tone: "leaf" | "warning" | "danger";
+  kind: ActionKind;
+}
+
+function decideMainAction(
+  plant: Plant,
+  diagnosis: Diagnosis | null,
+): MainAction {
+  if (!diagnosis) {
+    return {
+      label: "Fazer primeiro diagnóstico",
+      tone: plant.status === "atencao" ? "warning" : "leaf",
+      kind: "diagnostico",
+    };
   }
+  const urgent =
+    diagnosis.status === "atencao" && diagnosis.reevaluateInDays <= 3;
+  if (urgent) {
+    return { label: "Reavaliar agora", tone: "danger", kind: "diagnostico" };
+  }
+  if (diagnosis.status === "atencao") {
+    return {
+      label: "Atualizar diagnóstico",
+      tone: "warning",
+      kind: "diagnostico",
+    };
+  }
+  if (diagnosis.status === "acompanhamento") {
+    return { label: "Acompanhar evolução", tone: "leaf", kind: "historico" };
+  }
+  return { label: "Ver plano de cuidados", tone: "leaf", kind: "plano" };
 }
 
 function PlantDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<TabKey>("visao");
+  const [taskOverrides, setTaskOverrides] = useState<Record<string, boolean>>({});
+  const [extraTimeline, setExtraTimeline] = useState<TimelineEntry[]>([]);
+  const [dialog, setDialog] = useState<null | "rega" | "adubacao" | "foto" | "obs">(
+    null,
+  );
+  const [note, setNote] = useState("");
+
   const plant = useQuery({
     queryKey: ["plant", id],
     queryFn: () => plantsService.get(id),
+    retry: 1,
   });
   const tasks = useQuery({
     queryKey: ["tasks", id],
     queryFn: () => tasksService.listByPlant(id),
+    enabled: !!plant.data,
   });
   const timeline = useQuery({
     queryKey: ["timeline", id],
     queryFn: () => timelineService.listByPlant(id),
+    enabled: !!plant.data,
+  });
+  const diagnosis = useQuery({
+    queryKey: ["diagnosis", id],
+    queryFn: () => diagnosisService.getByPlant(id),
+    enabled: !!plant.data,
   });
 
+  const mergedTasks: CareTask[] = useMemo(() => {
+    return (tasks.data ?? []).map((t) =>
+      t.id in taskOverrides ? { ...t, done: taskOverrides[t.id] } : t,
+    );
+  }, [tasks.data, taskOverrides]);
+
+  const completed = mergedTasks.filter((t) => t.done).length;
+  const total = mergedTasks.length;
+  const progress = total ? Math.round((completed / total) * 100) : 0;
+
+  const combinedTimeline = useMemo(
+    () =>
+      [...extraTimeline, ...(timeline.data ?? [])].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      ),
+    [timeline.data, extraTimeline],
+  );
+
   if (plant.isSuccess && !plant.data) throw notFound();
+
+  if (plant.isError) {
+    return (
+      <PlantLoadError
+        onRetry={() => plant.refetch()}
+      />
+    );
+  }
 
   if (plant.isLoading || !plant.data) {
     return (
@@ -69,13 +159,61 @@ function PlantDetail() {
   }
 
   const p: Plant = plant.data;
-  const action = mainAction(p.status);
+  const dx = diagnosis.data ?? null;
+  const action = decideMainAction(p, dx);
   const actionToneClass =
     action.tone === "warning"
       ? "bg-warning text-warning-foreground hover:bg-warning/90"
       : action.tone === "danger"
         ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
         : "";
+
+  const runAction = () => {
+    if (action.kind === "diagnostico") {
+      navigate({ to: "/app/diagnostico", search: { plantId: p.id } });
+    } else if (action.kind === "plano") {
+      setTab("plano");
+    } else {
+      setTab("hist");
+    }
+  };
+
+  const toggleTask = (taskId: string) => {
+    const current = mergedTasks.find((t) => t.id === taskId);
+    if (!current) return;
+    setTaskOverrides((prev) => ({ ...prev, [taskId]: !current.done }));
+    toast.success(!current.done ? "Tarefa concluída" : "Tarefa reaberta");
+  };
+
+  const addTimeline = (type: TimelineEntry["type"], noteText?: string) => {
+    const entry: TimelineEntry = {
+      id: `local-${Date.now()}`,
+      plantId: p.id,
+      type,
+      date: new Date().toISOString(),
+      note: noteText,
+    };
+    setExtraTimeline((prev) => [entry, ...prev]);
+  };
+
+  const confirmQuickAction = () => {
+    if (!dialog) return;
+    if (dialog === "rega") {
+      addTimeline("rega", note || "Rega registrada");
+      toast.success("Rega registrada");
+    } else if (dialog === "adubacao") {
+      addTimeline("adubacao", note || "Adubação registrada");
+      toast.success("Adubação registrada");
+    } else if (dialog === "foto") {
+      addTimeline("foto", note || "Foto adicionada (demonstrativo)");
+      toast.success("Foto adicionada");
+    } else if (dialog === "obs") {
+      addTimeline("diagnostico", note || "Observação registrada");
+      toast.success("Observação registrada");
+    }
+    setNote("");
+    setDialog(null);
+  };
 
   return (
     <AppShell
@@ -117,31 +255,32 @@ function PlantDetail() {
               </div>
             )}
 
-            <Button asChild size="lg" className={`mt-4 w-full ${actionToneClass}`}>
-              <Link to="/app/diagnostico" search={{ plantId: p.id }}>
-                {action.label}
-              </Link>
+            <Button
+              size="lg"
+              onClick={runAction}
+              className={`mt-4 w-full ${actionToneClass}`}
+            >
+              {action.label}
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <Button variant="outline">
-            <Droplets className="h-4 w-4" /> Registrar
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Button variant="outline" onClick={() => setDialog("rega")}>
+            <Droplets className="h-4 w-4" /> Rega
           </Button>
-          <Button asChild variant="outline">
-            <Link to="/app/diagnostico" search={{ plantId: p.id }}>
-              <Camera className="h-4 w-4" /> Diagnóstico
-            </Link>
+          <Button variant="outline" onClick={() => setDialog("adubacao")}>
+            <Sprout className="h-4 w-4" /> Adubação
           </Button>
-          <Button asChild variant="outline">
-            <Link to="/app/jardineiro">
-              <MessageCircle className="h-4 w-4" /> IA
-            </Link>
+          <Button variant="outline" onClick={() => setDialog("foto")}>
+            <Camera className="h-4 w-4" /> Foto
+          </Button>
+          <Button variant="outline" onClick={() => setDialog("obs")}>
+            <FileText className="h-4 w-4" /> Observação
           </Button>
         </div>
 
-        <Tabs defaultValue="visao">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="visao">Visão</TabsTrigger>
             <TabsTrigger value="diag">Diagnósticos</TabsTrigger>
@@ -159,12 +298,18 @@ function PlantDetail() {
             </div>
             <div className="rounded-2xl border border-border bg-card p-4 text-sm">
               <h3 className="font-semibold">Resumo da saúde</h3>
-              <ul className="mt-2 space-y-1 text-muted-foreground">
-                <li>Principal atenção: possível excesso de umidade</li>
-                <li>Confiança: moderada</li>
-                <li>Última análise: há 4 dias</li>
-                <li>Próxima verificação: amanhã</li>
-              </ul>
+              {dx ? (
+                <ul className="mt-2 space-y-1 text-muted-foreground">
+                  <li>Principal atenção: {dx.mainSuspicion}</li>
+                  <li>Confiança: {dx.confidence}</li>
+                  <li>Última análise: {fmtRelative(dx.createdAt)}</li>
+                  <li>Reavaliar em: {dx.reevaluateInDays} dias</li>
+                </ul>
+              ) : (
+                <p className="mt-2 text-muted-foreground">
+                  Ainda não há diagnóstico registrado para esta planta.
+                </p>
+              )}
               <p className="mt-2 text-xs italic">
                 Diagnóstico é uma hipótese assistida.
               </p>
@@ -172,59 +317,136 @@ function PlantDetail() {
           </TabsContent>
 
           <TabsContent value="diag" className="mt-4 space-y-2">
-            <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">Excesso de umidade nas raízes</p>
-                <span className="text-xs text-muted-foreground">há 4 dias</span>
+            {dx ? (
+              <div className="rounded-2xl border border-border bg-card p-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">{dx.mainSuspicion}</p>
+                  <span className="text-xs text-muted-foreground">
+                    {fmtRelative(dx.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Confiança {dx.confidence} · status {dx.status}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/app/diagnostico" search={{ plantId: p.id }}>
+                      Atualizar diagnóstico
+                    </Link>
+                  </Button>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Confiança moderada · status atenção
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/app/diagnostico" search={{ plantId: p.id }}>
-                    Atualizar diagnóstico
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            ) : (
+              <EmptyState
+                icon={<Stethoscope className="h-5 w-5" />}
+                title="Sem diagnósticos ainda"
+                description="Faça o primeiro diagnóstico para receber um plano de cuidados personalizado."
+                action={
+                  <Button asChild>
+                    <Link to="/app/diagnostico" search={{ plantId: p.id }}>
+                      Fazer primeiro diagnóstico
+                    </Link>
+                  </Button>
+                }
+              />
+            )}
           </TabsContent>
 
-          <TabsContent value="plano" className="mt-4 space-y-2">
-            {(tasks.data ?? []).map((t) => (
-              <CareTaskCard key={t.id} task={t} />
+          <TabsContent value="plano" className="mt-4 space-y-3">
+            {total > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    {completed} de {total} cuidados concluídos
+                  </span>
+                  <span className="text-muted-foreground">{progress}%</span>
+                </div>
+                <Progress value={progress} />
+              </div>
+            )}
+            {mergedTasks.map((t) => (
+              <CareTaskCard key={t.id} task={t} onToggle={toggleTask} />
             ))}
-            {(tasks.data ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma tarefa no plano ainda.
-              </p>
+            {total === 0 && (
+              <EmptyState
+                icon={<Sprout className="h-5 w-5" />}
+                title="Nenhuma tarefa no plano"
+                description="As tarefas aparecem aqui após um diagnóstico ou quando você registra cuidados."
+              />
             )}
           </TabsContent>
 
           <TabsContent value="hist" className="mt-4">
-            <ol className="relative space-y-3 border-l border-border pl-4">
-              {(timeline.data ?? []).map((e) => (
-                <li key={e.id} className="relative">
-                  <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-leaf" />
-                  <div className="rounded-2xl border border-border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(e.date), "d 'de' MMM", { locale: ptBR })} ·{" "}
-                      {e.type}
-                    </p>
-                    {e.note && <p className="text-sm">{e.note}</p>}
-                    {e.photo && (
-                      <img
-                        src={e.photo}
-                        alt=""
-                        className="mt-2 h-24 w-24 rounded-lg object-cover"
-                      />
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            {combinedTimeline.length === 0 ? (
+              <EmptyState
+                icon={<FileText className="h-5 w-5" />}
+                title="Sem registros no histórico"
+                description="Registre uma rega, adubação ou foto para começar a montar a linha do tempo."
+              />
+            ) : (
+              <ol className="relative space-y-3 border-l border-border pl-4">
+                {combinedTimeline.map((e) => (
+                  <li key={e.id} className="relative">
+                    <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-leaf" />
+                    <div className="rounded-2xl border border-border bg-card p-3">
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(e.date), "d 'de' MMM", { locale: ptBR })} ·{" "}
+                        {e.type}
+                      </p>
+                      {e.note && <p className="text-sm">{e.note}</p>}
+                      {e.photo && (
+                        <img
+                          src={e.photo}
+                          alt=""
+                          className="mt-2 h-24 w-24 rounded-lg object-cover"
+                        />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
           </TabsContent>
         </Tabs>
+      </div>
+
+      <Dialog open={!!dialog} onOpenChange={(o) => !o && setDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dialog === "rega" && "Registrar rega"}
+              {dialog === "adubacao" && "Registrar adubação"}
+              {dialog === "foto" && "Adicionar foto"}
+              {dialog === "obs" && "Registrar observação"}
+            </DialogTitle>
+            <DialogDescription>
+              Este registro é adicionado ao histórico desta planta (modo demonstrativo).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="quick-note">Observação (opcional)</Label>
+            <Textarea
+              id="quick-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Detalhes deste registro..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialog(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmQuickAction}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="mt-6 flex justify-center pb-4">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/app/jardineiro">
+            <MessageCircle className="h-4 w-4" /> Falar com Jardineiro IA
+          </Link>
+        </Button>
       </div>
     </AppShell>
   );
@@ -243,6 +465,15 @@ function Info({ label, value, icon }: { label: string; value: string; icon: Reac
 function fmt(iso?: string) {
   if (!iso) return "-";
   return format(new Date(iso), "d 'de' MMM", { locale: ptBR });
+}
+
+function fmtRelative(iso: string) {
+  const days = Math.round(
+    (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (days <= 0) return "hoje";
+  if (days === 1) return "há 1 dia";
+  return `há ${days} dias`;
 }
 
 function PlantNotFound() {
@@ -265,6 +496,36 @@ function PlantNotFound() {
           <Button asChild variant="outline">
             <Link to="/app/inicio">
               <Home className="h-4 w-4" /> Ir para o início
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+function PlantError({ reset }: { error: Error; reset: () => void }) {
+  return <PlantLoadError onRetry={reset} />;
+}
+
+function PlantLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <AppShell title="Erro ao carregar">
+      <div className="mx-auto max-w-md space-y-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-6 w-6" />
+        </div>
+        <h2 className="font-display text-xl font-semibold">
+          Não foi possível carregar esta planta
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Verifique sua conexão e tente novamente.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button onClick={onRetry}>Tentar novamente</Button>
+          <Button asChild variant="outline">
+            <Link to="/app/plantas">
+              <ArrowLeft className="h-4 w-4" /> Voltar para Minhas Plantas
             </Link>
           </Button>
         </div>
