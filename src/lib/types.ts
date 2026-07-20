@@ -81,6 +81,9 @@ export interface Diagnosis {
   immediateActions: string[];
   avoid: string[];
   urgencySigns: string[];
+  whatToObserve?: string[];
+  improvementSigns?: string[];
+  careTimeline?: { when: string; task: string }[];
   reevaluateInDays: number;
 }
 
