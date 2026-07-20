@@ -317,7 +317,7 @@ function DiagnosisPage() {
               symptom={symptom}
               photoCount={photoCount}
               answers={answers}
-              onEdit={setStep}
+              onEdit={(s) => setStep(s as Step)}
             />
 
             <Button className="w-full h-12 text-base shadow-lg shadow-leaf/20" onClick={analyze}>
