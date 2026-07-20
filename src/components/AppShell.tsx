@@ -29,10 +29,12 @@ export function AppShell({
   title,
   children,
   right,
+  left,
 }: {
   title?: string;
   children: ReactNode;
   right?: ReactNode;
+  left?: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
@@ -76,14 +78,20 @@ export function AppShell({
         <main className="min-w-0 flex-1 pb-24 md:pb-6">
           {/* Mobile header */}
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
-            <Link to="/app/inicio" className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-leaf text-primary-foreground">
-                <Leaf className="h-4 w-4" />
-              </div>
-              <span className="font-display text-base font-semibold">
-                {title ?? "Plantae AI"}
-              </span>
-            </Link>
+            <div className="flex items-center gap-2">
+              {left ? (
+                left
+              ) : (
+                <Link to="/app/inicio" className="flex items-center gap-2">
+                  <div className="grid h-8 w-8 place-items-center rounded-lg bg-leaf text-primary-foreground">
+                    <Leaf className="h-4 w-4" />
+                  </div>
+                  <span className="font-display text-base font-semibold">
+                    {title ?? "Plantae AI"}
+                  </span>
+                </Link>
+              )}
+            </div>
             {right}
           </header>
 

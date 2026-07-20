@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { EmptyState } from "@/components/EmptyState";
+import { DiagnosisResult } from "@/components/DiagnosisResult";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -36,6 +37,7 @@ import {
   Sprout,
   Stethoscope,
   Sun,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -63,27 +65,29 @@ function decideMainAction(
 ): MainAction {
   if (!diagnosis) {
     return {
-      label: "Fazer primeiro diagnóstico",
+      label: "Avaliar saúde agora",
       tone: plant.status === "atencao" ? "warning" : "leaf",
       kind: "diagnostico",
     };
   }
-  const urgent =
-    diagnosis.status === "atencao" && diagnosis.reevaluateInDays <= 3;
-  if (urgent) {
-    return { label: "Reavaliar agora", tone: "danger", kind: "diagnostico" };
-  }
+
+  // Priority logic
   if (diagnosis.status === "atencao") {
+    if (diagnosis.reevaluateInDays <= 3) {
+      return { label: "Urgente: Reavaliar", tone: "danger", kind: "diagnostico" };
+    }
     return {
-      label: "Atualizar diagnóstico",
+      label: "Ver Plano de Cuidados",
       tone: "warning",
-      kind: "diagnostico",
+      kind: "plano",
     };
   }
+
   if (diagnosis.status === "acompanhamento") {
     return { label: "Acompanhar evolução", tone: "leaf", kind: "historico" };
   }
-  return { label: "Ver plano de cuidados", tone: "leaf", kind: "plano" };
+
+  return { label: "Ver Plano de Cuidados", tone: "leaf", kind: "plano" };
 }
 
 function PlantDetail() {
@@ -289,49 +293,60 @@ function PlantDetail() {
           </TabsList>
 
           <TabsContent value="visao" className="mt-4 space-y-3">
-            <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-              <p className="text-muted-foreground">
-                Sua {p.nickname} está em ambiente <strong>{p.environment}</strong>, com luz{" "}
-                <strong>{p.light}</strong>. Rega recomendada: a cada{" "}
-                <strong>{p.wateringFrequencyDays} dias</strong>.
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ambiente</h3>
+                <p className="text-sm font-medium">{p.environment === "interno" ? "Interno" : "Externo"}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Luz {p.light}</p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Frequência</h3>
+                <p className="text-sm font-medium">Cuidado a cada {p.wateringFrequencyDays} dias</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Conforme espécie</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-              <h3 className="font-semibold">Resumo da saúde</h3>
+
+            <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Resumo da saúde</h3>
               {dx ? (
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>Principal atenção: {dx.mainSuspicion}</li>
-                  <li>Confiança: {dx.confidence}</li>
-                  <li>Última análise: {fmtRelative(dx.createdAt)}</li>
-                  <li>Reavaliar em: {dx.reevaluateInDays} dias</li>
-                </ul>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Principal suspeita:</span>
+                    <span className="font-semibold text-leaf-dark">{dx.mainSuspicion}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Confiança da IA:</span>
+                    <span className="font-medium text-xs rounded-full px-2 py-0.5 bg-leaf-soft text-leaf">{dx.confidence}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Próxima revisão:</span>
+                    <span className="font-medium">Em {dx.reevaluateInDays} dias</span>
+                  </div>
+                </div>
               ) : (
-                <p className="mt-2 text-muted-foreground">
-                  Ainda não há diagnóstico registrado para esta planta.
-                </p>
+                <div className="text-center py-2">
+                  <p className="text-muted-foreground mb-3">Ainda não há diagnósticos registrados.</p>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/app/diagnostico" search={{ plantId: p.id }}>Começar agora</Link>
+                  </Button>
+                </div>
               )}
-              <p className="mt-2 text-xs italic">
-                Diagnóstico é uma hipótese assistida.
-              </p>
             </div>
           </TabsContent>
 
           <TabsContent value="diag" className="mt-4 space-y-2">
             {dx ? (
-              <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{dx.mainSuspicion}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {fmtRelative(dx.createdAt)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Confiança {dx.confidence} · status {dx.status}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button asChild size="sm" variant="outline">
+              <div className="space-y-4">
+                <DiagnosisResult d={dx} />
+                <div className="flex gap-2 p-1">
+                  <Button asChild className="flex-1" variant="outline">
                     <Link to="/app/diagnostico" search={{ plantId: p.id }}>
-                      Atualizar diagnóstico
+                      <RefreshCw className="h-4 w-4 mr-2" /> Nova avaliação
+                    </Link>
+                  </Button>
+                  <Button asChild className="flex-1" variant="outline">
+                    <Link to="/app/jardineiro">
+                      <MessageCircle className="h-4 w-4 mr-2" /> IA Concierge
                     </Link>
                   </Button>
                 </div>
