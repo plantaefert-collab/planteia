@@ -5,8 +5,10 @@ import {
   mockTimeline,
   mockProducts,
   mockDiagnosis,
+  mockDiagnosesByPlant,
   mockChat,
 } from "./mock-data";
+
 
 // Isolated service layer — future replacement by Supabase / AI API.
 // All functions are async on purpose to mimic real API contracts.
@@ -54,7 +56,12 @@ export const diagnosisService = {
     await wait(1600);
     return mockDiagnosis;
   },
+  async getByPlant(plantId: string): Promise<Diagnosis | null> {
+    await wait(80);
+    return mockDiagnosesByPlant[plantId] ?? null;
+  },
 };
+
 
 export const chatService = {
   async initial(): Promise<ChatMessage[]> {

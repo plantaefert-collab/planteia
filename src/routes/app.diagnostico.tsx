@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
@@ -34,20 +34,25 @@ type Step = "intro" | "select" | "photos" | "questions" | "loading" | "result";
 
 function DiagnosisPage() {
   const { plantId } = Route.useSearch();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("intro");
   const [selected, setSelected] = useState<Plant | null>(null);
   const [result, setResult] = useState<Diagnosis | null>(null);
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
 
-  // Pre-select plant when arriving via ?plantId=...
+  // Sync selection with ?plantId= in the URL
   useEffect(() => {
-    if (!plantId || !plants.data) return;
+    if (!plants.data) return;
+    if (!plantId) {
+      if (selected) setSelected(null);
+      return;
+    }
     const found = plants.data.find((p) => p.id === plantId) ?? null;
-    if (found) {
+    if (found && found.id !== selected?.id) {
       setSelected(found);
       setStep((prev) => (prev === "intro" || prev === "select" ? "photos" : prev));
     }
-  }, [plantId, plants.data]);
+  }, [plantId, plants.data, selected]);
 
   const analyze = async () => {
     setStep("loading");
@@ -57,9 +62,17 @@ function DiagnosisPage() {
   };
 
   const pickPlant = (p: Plant) => {
+    navigate({ to: "/app/diagnostico", search: { plantId: p.id } });
     setSelected(p);
     setStep("photos");
   };
+
+  const pickNewPlant = () => {
+    navigate({ to: "/app/diagnostico", search: {} });
+    setSelected(null);
+    setStep("photos");
+  };
+
 
   return (
     <AppShell title="Diagnóstico">
@@ -132,10 +145,8 @@ function DiagnosisPage() {
                 </button>
               ))}
               <button
-                onClick={() => {
-                  setSelected(null);
-                  setStep("photos");
-                }}
+                onClick={pickNewPlant}
+
                 className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-card p-3 text-left transition hover:border-leaf"
               >
                 <div className="grid h-12 w-12 place-items-center rounded-lg bg-leaf-soft text-leaf">
