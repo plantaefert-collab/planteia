@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { EmptyState } from "@/components/EmptyState";
+import { DiagnosisResult } from "@/components/DiagnosisResult";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -36,6 +37,7 @@ import {
   Sprout,
   Stethoscope,
   Sun,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
