@@ -291,30 +291,44 @@ function PlantDetail() {
           </TabsList>
 
           <TabsContent value="visao" className="mt-4 space-y-3">
-            <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-              <p className="text-muted-foreground">
-                Sua {p.nickname} está em ambiente <strong>{p.environment}</strong>, com luz{" "}
-                <strong>{p.light}</strong>. Rega recomendada: a cada{" "}
-                <strong>{p.wateringFrequencyDays} dias</strong>.
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ambiente</h3>
+                <p className="text-sm font-medium">{p.environment === "interno" ? "Interno" : "Externo"}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Luz {p.light}</p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Frequência</h3>
+                <p className="text-sm font-medium">Cuidado a cada {p.wateringFrequencyDays} dias</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Conforme espécie</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-              <h3 className="font-semibold">Resumo da saúde</h3>
+
+            <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Resumo da saúde</h3>
               {dx ? (
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>Principal atenção: {dx.mainSuspicion}</li>
-                  <li>Confiança: {dx.confidence}</li>
-                  <li>Última análise: {fmtRelative(dx.createdAt)}</li>
-                  <li>Reavaliar em: {dx.reevaluateInDays} dias</li>
-                </ul>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Principal suspeita:</span>
+                    <span className="font-semibold text-leaf-dark">{dx.mainSuspicion}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Confiança da IA:</span>
+                    <span className="font-medium text-xs rounded-full px-2 py-0.5 bg-leaf-soft text-leaf">{dx.confidence}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Próxima revisão:</span>
+                    <span className="font-medium">Em {dx.reevaluateInDays} dias</span>
+                  </div>
+                </div>
               ) : (
-                <p className="mt-2 text-muted-foreground">
-                  Ainda não há diagnóstico registrado para esta planta.
-                </p>
+                <div className="text-center py-2">
+                  <p className="text-muted-foreground mb-3">Ainda não há diagnósticos registrados.</p>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/app/diagnostico" search={{ plantId: p.id }}>Começar agora</Link>
+                  </Button>
+                </div>
               )}
-              <p className="mt-2 text-xs italic">
-                Diagnóstico é uma hipótese assistida.
-              </p>
             </div>
           </TabsContent>
 
