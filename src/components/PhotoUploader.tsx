@@ -6,10 +6,12 @@ export function PhotoUploader({
   label,
   hint,
   className,
+  onUpload,
 }: {
   label: string;
   hint?: string;
   className?: string;
+  onUpload?: (url: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
