@@ -13,6 +13,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthRecoverRouteImport } from './routes/auth.recover'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
@@ -129,12 +135,12 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/app/': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/app/calendario': typeof AppCalendarioRoute
@@ -148,6 +154,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/app': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
@@ -168,6 +175,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/app/': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
 }
@@ -189,12 +197,12 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/app/'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
     | '/auth'
     | '/onboarding'
     | '/app/calendario'
@@ -208,6 +216,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/app'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
   id:
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/app/'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
   fileRoutesById: FileRoutesById
@@ -267,6 +277,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/auth/signup': {
       id: '/auth/signup'
@@ -385,6 +402,7 @@ interface AppRouteChildren {
   AppPerfilRoute: typeof AppPerfilRoute
   AppPlantasRoute: typeof AppPlantasRouteWithChildren
   AppProdutosRoute: typeof AppProdutosRoute
+  AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -396,6 +414,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPerfilRoute: AppPerfilRoute,
   AppPlantasRoute: AppPlantasRouteWithChildren,
   AppProdutosRoute: AppProdutosRoute,
+  AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -423,13 +442,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

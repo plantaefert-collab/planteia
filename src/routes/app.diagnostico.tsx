@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -17,31 +17,77 @@ import { diagnosisService, plantsService } from "@/lib/services";
 import { DiagnosisResult } from "@/components/DiagnosisResult";
 import { ProductRecommendationCard } from "@/components/ProductRecommendationCard";
 import { mockProducts } from "@/lib/mock-data";
-import type { Diagnosis } from "@/lib/types";
-import { Sparkles, Info, Loader2, Plus, MessageCircle } from "lucide-react";
+import type { Diagnosis, Plant } from "@/lib/types";
+import { Sparkles, Info, Loader2, Plus, MessageCircle, RefreshCw } from "lucide-react";
+
+type DiagnosticoSearch = { plantId?: string };
 
 export const Route = createFileRoute("/app/diagnostico")({
   head: () => ({ meta: [{ title: "Diagnóstico · Plantae AI" }] }),
+  validateSearch: (search: Record<string, unknown>): DiagnosticoSearch => ({
+    plantId: typeof search.plantId === "string" ? search.plantId : undefined,
+  }),
   component: DiagnosisPage,
 });
 
 type Step = "intro" | "select" | "photos" | "questions" | "loading" | "result";
 
 function DiagnosisPage() {
+  const { plantId } = Route.useSearch();
   const [step, setStep] = useState<Step>("intro");
+  const [selected, setSelected] = useState<Plant | null>(null);
   const [result, setResult] = useState<Diagnosis | null>(null);
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
 
+  // Pre-select plant when arriving via ?plantId=...
+  useEffect(() => {
+    if (!plantId || !plants.data) return;
+    const found = plants.data.find((p) => p.id === plantId) ?? null;
+    if (found) {
+      setSelected(found);
+      setStep((prev) => (prev === "intro" || prev === "select" ? "photos" : prev));
+    }
+  }, [plantId, plants.data]);
+
   const analyze = async () => {
     setStep("loading");
-    const r = await diagnosisService.analyze({});
+    const r = await diagnosisService.analyze({ plantId: selected?.id });
     setResult(r);
     setStep("result");
+  };
+
+  const pickPlant = (p: Plant) => {
+    setSelected(p);
+    setStep("photos");
   };
 
   return (
     <AppShell title="Diagnóstico">
       <div className="mx-auto max-w-lg space-y-5">
+        {selected && step !== "intro" && step !== "select" && (
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
+            <img
+              src={selected.photo}
+              alt=""
+              className="h-12 w-12 rounded-lg object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{selected.nickname}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {selected.species}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("select")}
+              className="text-xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Trocar
+            </Button>
+          </div>
+        )}
+
         {step === "intro" && (
           <div className="space-y-4">
             <div className="flex gap-3 rounded-2xl border border-border bg-leaf-soft/50 p-4">
@@ -75,7 +121,7 @@ function DiagnosisPage() {
               {(plants.data ?? []).map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => setStep("photos")}
+                  onClick={() => pickPlant(p)}
                   className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:border-leaf"
                 >
                   <img src={p.photo} alt="" className="h-12 w-12 rounded-lg object-cover" />
@@ -86,7 +132,10 @@ function DiagnosisPage() {
                 </button>
               ))}
               <button
-                onClick={() => setStep("photos")}
+                onClick={() => {
+                  setSelected(null);
+                  setStep("photos");
+                }}
                 className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-card p-3 text-left transition hover:border-leaf"
               >
                 <div className="grid h-12 w-12 place-items-center rounded-lg bg-leaf-soft text-leaf">
@@ -137,7 +186,13 @@ function DiagnosisPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Frequência de rega</Label>
-                <Select>
+                <Select
+                  defaultValue={
+                    selected?.wateringFrequencyDays
+                      ? String(selected.wateringFrequencyDays)
+                      : undefined
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="A cada..." />
                   </SelectTrigger>
