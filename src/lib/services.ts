@@ -1,4 +1,5 @@
-import type { Plant, CareTask, Diagnosis, Product, ChatMessage } from "./types";
+import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from "./types";
+import * as mockData from "./mock-data";
 import {
   mockPlants,
   mockCareTasks,
