@@ -20,6 +20,7 @@ export function PhotoUploader({
     if (!f) return;
     const url = URL.createObjectURL(f);
     setPreview(url);
+    onUpload?.(url);
   };
 
   return (
