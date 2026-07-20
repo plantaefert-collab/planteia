@@ -37,14 +37,35 @@ export type CareType =
   | "fotografar"
   | "substrato";
 
+export type TaskPriority = "baixa" | "media" | "alta" | "critica";
+
 export interface CareTask {
   id: string;
   plantId: string;
   type: CareType;
   title: string;
+  description?: string;
   date: string; // ISO
   done: boolean;
+  priority?: TaskPriority;
+  origin?: "diagnostico" | "manual";
 }
+
+export type PlanStatus = "nao_iniciado" | "em_andamento" | "aguardando_reavaliacao" | "concluido" | "ajustado" | "interrompido";
+
+export interface CarePlan {
+  id: string;
+  plantId: string;
+  diagnosisId: string;
+  name: string;
+  status: PlanStatus;
+  priority: TaskPriority;
+  createdAt: string;
+  nextReevaluationAt?: string;
+  tasks: CareTask[];
+  avoid: string[];
+}
+
 
 export type Confidence = "baixa" | "moderada" | "alta";
 
