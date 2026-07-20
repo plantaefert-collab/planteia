@@ -299,7 +299,7 @@ function DiagnosisPage() {
             <DynamicQuestionnaire 
               symptom={symptom} 
               answers={answers} 
-              onChange={(id, val) => setAnswers(prev => ({ ...prev, [id]: val }))} 
+              onChange={(id, val) => setAnswers((prev: Record<string, any>) => ({ ...prev, [id]: val }))} 
 
             />
 
