@@ -334,20 +334,17 @@ function PlantDetail() {
 
           <TabsContent value="diag" className="mt-4 space-y-2">
             {dx ? (
-              <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{dx.mainSuspicion}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {fmtRelative(dx.createdAt)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Confiança {dx.confidence} · status {dx.status}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button asChild size="sm" variant="outline">
+              <div className="space-y-4">
+                <DiagnosisResult d={dx} />
+                <div className="flex gap-2 p-1">
+                  <Button asChild className="flex-1" variant="outline">
                     <Link to="/app/diagnostico" search={{ plantId: p.id }}>
-                      Atualizar diagnóstico
+                      <RefreshCw className="h-4 w-4 mr-2" /> Nova avaliação
+                    </Link>
+                  </Button>
+                  <Button asChild className="flex-1" variant="outline">
+                    <Link to="/app/jardineiro">
+                      <MessageCircle className="h-4 w-4 mr-2" /> IA Concierge
                     </Link>
                   </Button>
                 </div>
