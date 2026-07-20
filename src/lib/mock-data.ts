@@ -1,6 +1,7 @@
 import type {
   CareTask,
   ChatMessage,
+  Confidence,
   Diagnosis,
   Plant,
   Product,
