@@ -5,12 +5,14 @@ import { StatusBadge } from "./StatusBadge";
 const confidenceLabel = {
   baixa: "Confiança baixa",
   moderada: "Confiança moderada",
+  "moderada-alta": "Confiança moderada-alta",
   alta: "Confiança alta",
 } as const;
 
 const confidenceClass = {
   baixa: "bg-muted text-muted-foreground",
   moderada: "bg-warning-soft text-warning",
+  "moderada-alta": "bg-success-soft/70 text-success",
   alta: "bg-success-soft text-success",
 } as const;
 
