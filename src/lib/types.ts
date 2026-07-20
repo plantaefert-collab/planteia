@@ -67,7 +67,7 @@ export interface CarePlan {
 }
 
 
-export type Confidence = "baixa" | "moderada" | "alta";
+export type Confidence = "baixa" | "moderada" | "moderada-alta" | "alta";
 
 export interface Diagnosis {
   id: string;
