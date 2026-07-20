@@ -63,27 +63,29 @@ function decideMainAction(
 ): MainAction {
   if (!diagnosis) {
     return {
-      label: "Fazer primeiro diagnóstico",
+      label: "Avaliar saúde agora",
       tone: plant.status === "atencao" ? "warning" : "leaf",
       kind: "diagnostico",
     };
   }
-  const urgent =
-    diagnosis.status === "atencao" && diagnosis.reevaluateInDays <= 3;
-  if (urgent) {
-    return { label: "Reavaliar agora", tone: "danger", kind: "diagnostico" };
-  }
+
+  // Priority logic
   if (diagnosis.status === "atencao") {
+    if (diagnosis.reevaluateInDays <= 3) {
+      return { label: "Urgente: Reavaliar", tone: "danger", kind: "diagnostico" };
+    }
     return {
-      label: "Atualizar diagnóstico",
+      label: "Ver Plano de Cuidados",
       tone: "warning",
-      kind: "diagnostico",
+      kind: "plano",
     };
   }
+
   if (diagnosis.status === "acompanhamento") {
     return { label: "Acompanhar evolução", tone: "leaf", kind: "historico" };
   }
-  return { label: "Ver plano de cuidados", tone: "leaf", kind: "plano" };
+
+  return { label: "Ver Plano de Cuidados", tone: "leaf", kind: "plano" };
 }
 
 function PlantDetail() {
