@@ -80,10 +80,10 @@ function PlantDetail() {
   return (
     <AppShell
       title={p.nickname}
-      left={
+      right={
         <Button asChild variant="ghost" size="sm">
           <Link to="/app/plantas" aria-label="Voltar para Minhas Plantas">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" /> Voltar
           </Link>
         </Button>
       }
