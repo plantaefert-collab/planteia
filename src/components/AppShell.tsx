@@ -29,10 +29,12 @@ export function AppShell({
   title,
   children,
   right,
+  left,
 }: {
   title?: string;
   children: ReactNode;
   right?: ReactNode;
+  left?: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
