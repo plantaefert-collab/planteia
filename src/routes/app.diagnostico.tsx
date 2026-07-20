@@ -30,7 +30,8 @@ export const Route = createFileRoute("/app/diagnostico")({
   component: DiagnosisPage,
 });
 
-type Step = "intro" | "select" | "photos" | "questions" | "loading" | "result";
+type Step = "intro" | "select" | "objective" | "symptom" | "photos" | "questions" | "review" | "loading" | "result";
+
 
 function DiagnosisPage() {
   const { plantId } = Route.useSearch();
