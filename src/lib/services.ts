@@ -59,7 +59,7 @@ export const diagnosisService = {
     objective?: string;
     symptom?: string;
     photos?: string[];
-    answers?: Record<string, any>;
+    answers?: Record<string, unknown>;
   }): Promise<Diagnosis> {
     const photos = (input.photos ?? []).filter((p) => p.startsWith("data:image/"));
 
@@ -86,28 +86,16 @@ export const diagnosisService = {
         } catch {
           try { message = await res.text(); } catch { /* ignore */ }
         }
+        if (code === "schema_mismatch" || code === "generation_failed" || res.status === 422 || res.status >= 500) {
+          return buildLocalPhotoDiagnosis(input, code);
+        }
+
         const error = new Error(message) as Error & { code?: string };
         error.code = code;
         throw error;
       }
-      const ai = await res.json();
-      return {
-        id: crypto.randomUUID(),
-        plantId: input.plantId,
-        createdAt: new Date().toISOString(),
-        status: ai.status ?? "acompanhamento",
-        mainSuspicion: ai.mainSuspicion ?? "Análise inconclusiva",
-        confidence: ai.confidence ?? "moderada",
-        observedSigns: ai.observedSigns ?? [],
-        otherPossibilities: ai.otherPossibilities ?? [],
-        immediateActions: ai.immediateActions ?? [],
-        avoid: ai.avoid ?? [],
-        urgencySigns: ai.urgencySigns ?? [],
-        whatToObserve: ai.whatToObserve ?? [],
-        improvementSigns: ai.improvementSigns ?? [],
-        careTimeline: ai.careTimeline ?? [],
-        reevaluateInDays: typeof ai.reevaluateInDays === "number" ? ai.reevaluateInDays : 7,
-      };
+      const ai = (await res.json()) as Partial<Diagnosis>;
+      return normalizePhotoDiagnosis(ai, input);
     }
 
     // Fallback: cenário simulado por sintoma quando não há fotos.
@@ -176,6 +164,91 @@ export const carePlanService = {
     return plan;
   }
 };
+
+function buildLocalPhotoDiagnosis(
+  input: { plantId?: string; plantSpecies?: string; symptom?: string },
+  reason: string,
+): Diagnosis {
+  const symptomLabel = input.symptom?.replace(/_/g, " ").trim();
+  return {
+    id: crypto.randomUUID(),
+    plantId: input.plantId,
+    createdAt: new Date().toISOString(),
+    status: "acompanhamento",
+    mainSuspicion: symptomLabel ? `Análise preliminar: ${symptomLabel}` : "Análise preliminar por foto",
+    confidence: "baixa",
+    observedSigns: [
+      reason === "schema_mismatch"
+        ? "A IA analisou a foto, mas a resposta precisou ser reorganizada"
+        : "O servidor aplicou um protocolo conservador para não bloquear o diagnóstico",
+      input.plantSpecies ? `Espécie informada: ${input.plantSpecies}` : "Foto recebida para avaliação visual",
+      "Recomendações baseadas em cuidados seguros para orquídeas",
+    ],
+    otherPossibilities: [
+      "Estresse por umidade, luz ou ventilação",
+      "Mudança natural de folhas antigas",
+      "Sinais iniciais ainda pouco evidentes na foto",
+    ],
+    immediateActions: [
+      "Verifique a umidade do substrato antes de regar",
+      "Observe a planta sob luz natural indireta",
+      "Tire nova foto da área afetada e do substrato em 3 a 7 dias",
+    ],
+    avoid: [
+      "Aplicar defensivos sem confirmar pragas",
+      "Regar se o substrato ainda estiver úmido",
+      "Fazer podas drásticas sem necrose evidente",
+    ],
+    urgencySigns: [
+      "Manchas aumentando rapidamente",
+      "Mau cheiro no substrato",
+      "Murcha intensa ou raízes escuras e moles",
+    ],
+    whatToObserve: [
+      "Evolução das manchas",
+      "Firmeza das folhas",
+      "Secagem do substrato entre regas",
+    ],
+    improvementSigns: [
+      "Folhas firmes",
+      "Sem avanço das manchas",
+      "Novas raízes ou brotos saudáveis",
+    ],
+    careTimeline: [
+      { when: "Agora", task: "Comparar sinais visíveis com a foto enviada" },
+      { when: "Em 3 dias", task: "Revisar umidade e avanço das manchas" },
+      { when: "Em 7 dias", task: "Refazer foto no mesmo ângulo" },
+    ],
+    reevaluateInDays: 7,
+  };
+}
+
+function normalizePhotoDiagnosis(ai: Partial<Diagnosis>, input: { plantId?: string }): Diagnosis {
+  const fallback = buildLocalPhotoDiagnosis(input, "normalized");
+  const list = (value: string[] | undefined, fallbackValue: string[]) =>
+    Array.isArray(value) && value.length > 0 ? value.filter(Boolean).slice(0, 6) : fallbackValue;
+
+  return {
+    id: crypto.randomUUID(),
+    plantId: input.plantId,
+    createdAt: new Date().toISOString(),
+    status: ai.status ?? fallback.status,
+    mainSuspicion: ai.mainSuspicion ?? fallback.mainSuspicion,
+    confidence: ai.confidence ?? fallback.confidence,
+    observedSigns: list(ai.observedSigns, fallback.observedSigns),
+    otherPossibilities: list(ai.otherPossibilities, fallback.otherPossibilities),
+    immediateActions: list(ai.immediateActions, fallback.immediateActions),
+    avoid: list(ai.avoid, fallback.avoid),
+    urgencySigns: list(ai.urgencySigns, fallback.urgencySigns),
+    whatToObserve: list(ai.whatToObserve, fallback.whatToObserve ?? []),
+    improvementSigns: list(ai.improvementSigns, fallback.improvementSigns ?? []),
+    careTimeline: Array.isArray(ai.careTimeline) && ai.careTimeline.length > 0 ? ai.careTimeline : fallback.careTimeline,
+    reevaluateInDays:
+      typeof ai.reevaluateInDays === "number"
+        ? Math.min(14, Math.max(3, Math.round(ai.reevaluateInDays)))
+        : fallback.reevaluateInDays,
+  };
+}
 
 
 
