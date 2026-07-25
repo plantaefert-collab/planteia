@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { generateObject } from "ai";
-import { z } from "zod";
+import { generateObject, NoObjectGeneratedError } from "ai";
+import { z, ZodError } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const SYSTEM_PROMPT = `Você é um fitopatologista assistente do Plantae AI, especializado em diagnóstico visual de plantas ornamentais (foco em orquídeas).
@@ -82,8 +82,28 @@ export const Route = createFileRoute("/api/diagnose-photo")({
 
           return Response.json(object);
         } catch (err) {
+          // Schema/parse failure: modelo respondeu, mas fora do formato esperado.
+          const isSchemaMismatch =
+            NoObjectGeneratedError.isInstance?.(err) ||
+            err instanceof ZodError ||
+            (err instanceof Error && /schema|validation|parse|zod/i.test(err.message));
+
+          if (isSchemaMismatch) {
+            return Response.json(
+              {
+                error: "schema_mismatch",
+                message:
+                  "A IA não conseguiu estruturar um diagnóstico confiável a partir desta foto. Tente reenviar com uma imagem mais nítida, bem iluminada e enquadrando a região afetada.",
+              },
+              { status: 422 },
+            );
+          }
+
           const message = err instanceof Error ? err.message : "Erro desconhecido";
-          return new Response(message, { status: 500 });
+          return Response.json(
+            { error: "generation_failed", message },
+            { status: 500 },
+          );
         }
       },
     },
