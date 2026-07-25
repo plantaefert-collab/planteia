@@ -107,7 +107,9 @@ function DiagnosisPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
+  const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
 
   const handleQuickCapture = (file: File | undefined) => {
     if (!file) return;
@@ -124,6 +126,15 @@ function DiagnosisPage() {
 
   useEffect(() => {
     setHistory(diagnosisHistory.list());
+    
+    // Permission check
+    if (typeof navigator !== "undefined" && navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: "camera" as PermissionName }).then((result) => {
+        if (result.state === "denied") setCameraPermissionDenied(true);
+        result.onchange = () => setCameraPermissionDenied(result.state === "denied");
+      }).catch(() => {});
+    }
+
   }, []);
 
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
@@ -336,31 +347,72 @@ function DiagnosisPage() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="flex w-full items-center gap-4 rounded-2xl border-2 border-leaf bg-leaf p-4 text-left text-leaf-foreground shadow-sm transition hover:bg-leaf-dark focus:outline-none focus:ring-2 focus:ring-leaf/40"
-            >
-              <div className="rounded-xl bg-white/15 p-2.5">
-                <Camera className="h-5 w-5" />
+            {cameraPermissionDenied ? (
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertCircle className="h-5 w-5" />
+                  <h3 className="font-semibold text-sm">Câmera bloqueada</h3>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Para diagnosticar por foto, você precisa permitir o acesso à câmera nas configurações do seu navegador ou dispositivo.
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 text-xs h-8"
+                    onClick={() => {
+                      setCameraPermissionDenied(false);
+                      cameraInputRef.current?.click();
+                    }}
+                  >
+                    Tentar abrir câmera
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex-1 text-xs h-8 underline"
+                    onClick={() => {
+                      toast.info("Geralmente fica no ícone de 'cadeado' na barra de endereços.", {
+                        duration: 5000,
+                      });
+                    }}
+                  >
+                    Como ajustar?
+                  </Button>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold">Tirar foto agora</h3>
-                <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois</p>
-              </div>
-              <ChevronRight className="h-5 w-5 opacity-80" />
-            </button>
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                handleQuickCapture(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex w-full items-center gap-4 rounded-2xl border-2 border-leaf bg-leaf p-4 text-left text-leaf-foreground shadow-sm transition hover:bg-leaf-dark focus:outline-none focus:ring-2 focus:ring-leaf/40"
+                >
+                  <div className="rounded-xl bg-white/15 p-2.5">
+                    <Camera className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Tirar foto agora</h3>
+                    <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 opacity-80" />
+                </button>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleQuickCapture(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                  onError={() => setCameraPermissionDenied(true)}
+                />
+              </>
+            )}
+
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center" aria-hidden>
