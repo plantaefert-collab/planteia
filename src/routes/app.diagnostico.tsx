@@ -356,55 +356,72 @@ function DiagnosisPage() {
                       hour: "2-digit",
                       minute: "2-digit",
                     });
+                    const { primary, suggestions } = buildHistoryTips(entry);
                     return (
                       <li
                         key={entry.id}
-                        className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-3 shadow-sm"
                       >
-                        {entry.thumbnail ? (
-                          <img
-                            src={entry.thumbnail}
-                            alt=""
-                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-leaf-soft text-leaf">
-                            <Sparkles className="h-5 w-5" />
+                        <div className="flex items-center gap-3">
+                          {entry.thumbnail ? (
+                            <img
+                              src={entry.thumbnail}
+                              alt=""
+                              className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-leaf-soft text-leaf">
+                              <Sparkles className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">
+                              {entry.diagnosis.mainSuspicion ?? "Diagnóstico"}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
+                            </p>
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">
-                            {entry.diagnosis.mainSuspicion ?? "Diagnóstico"}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
-                          </p>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Ver diagnóstico"
+                              onClick={() => viewHistoryEntry(entry)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Refazer diagnóstico"
+                              onClick={() => rerunHistoryEntry(entry)}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Remover do histórico"
+                              onClick={() => removeHistoryEntry(entry.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Ver diagnóstico"
-                            onClick={() => viewHistoryEntry(entry)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Refazer diagnóstico"
-                            onClick={() => rerunHistoryEntry(entry)}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Remover do histórico"
-                            onClick={() => removeHistoryEntry(entry.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                        <div className="mt-3 rounded-xl bg-leaf-soft/40 p-2.5">
+                          <p className="flex items-start gap-1.5 text-xs font-medium text-foreground">
+                            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-leaf" aria-hidden />
+                            <span>{primary}</span>
+                          </p>
+                          {suggestions.length > 0 && (
+                            <ul className="mt-1.5 space-y-1 pl-5 text-xs text-muted-foreground">
+                              {suggestions.map((s, i) => (
+                                <li key={i} className="list-disc marker:text-leaf">{s}</li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       </li>
                     );
