@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { diagnosisService, plantsService, carePlanService } from "@/lib/services";
 import { DiagnosisResult } from "@/components/DiagnosisResult";
 import type { Diagnosis, Plant, CarePlan } from "@/lib/types";
+import { diagnosisHistory, type PhotoDiagnosisHistoryEntry } from "@/lib/diagnosis-history";
 import { 
   Sparkles, 
   Loader2, 
