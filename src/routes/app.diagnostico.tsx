@@ -45,11 +45,12 @@ export const Route = createFileRoute("/app/diagnostico")({
   validateSearch: (search: Record<string, unknown>): DiagnosticoSearch => ({
     plantId: typeof search.plantId === "string" ? search.plantId : undefined,
     mode: search.mode === "acompanhamento" ? "acompanhamento" : undefined,
-  }),
-  component: DiagnosisPage,
-  loader: async ({ search }) => {
+    direct: typeof search.direct === "string" ? search.direct : undefined,
+  } as DiagnosticoSearch),
+  loader: ({ search }) => {
     return { direct: (search as any).direct === "camera" };
-  }
+  },
+  component: DiagnosisPage,
 });
 
 type Step = "intro" | "select" | "objective" | "symptom" | "photos" | "questions" | "review" | "loading" | "result";
