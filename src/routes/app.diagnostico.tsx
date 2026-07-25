@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,9 @@ import {
   Clock,
   Trash2,
   Eye,
-  Lightbulb
+  Lightbulb,
+  Camera
+
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -105,6 +107,20 @@ function DiagnosisPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleQuickCapture = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) return;
+      setPhotos((prev) => [...prev, dataUrl]);
+      if (!objective) setObjective("identificar");
+      setStep(selected ? "symptom" : "select");
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     setHistory(diagnosisHistory.list());
@@ -319,7 +335,42 @@ function DiagnosisPage() {
                 O assistente inteligente ajuda você a tomar a melhor decisão para o cuidado das suas plantas.
               </p>
             </div>
-            
+
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="flex w-full items-center gap-4 rounded-2xl border-2 border-leaf bg-leaf p-4 text-left text-leaf-foreground shadow-sm transition hover:bg-leaf-dark focus:outline-none focus:ring-2 focus:ring-leaf/40"
+            >
+              <div className="rounded-xl bg-white/15 p-2.5">
+                <Camera className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Tirar foto agora</h3>
+                <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois</p>
+              </div>
+              <ChevronRight className="h-5 w-5 opacity-80" />
+            </button>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                handleQuickCapture(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center" aria-hidden>
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 text-xs uppercase tracking-wide text-muted-foreground">ou</span>
+              </div>
+            </div>
+
             <DiagnosisIntentSelector onSelect={(id) => {
               setObjective(id);
               if (plantId && selected) {
@@ -328,6 +379,7 @@ function DiagnosisPage() {
                 setStep("select");
               }
             }} />
+
 
             <div className="flex gap-3 rounded-2xl border border-leaf/10 bg-leaf-soft/40 p-4">
               <AlertCircle className="h-5 w-5 shrink-0 text-leaf" />
