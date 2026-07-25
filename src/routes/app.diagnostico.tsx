@@ -20,7 +20,9 @@ import {
   Clock,
   Trash2,
   Eye,
-  Lightbulb
+  Lightbulb,
+  Camera
+
 } from "lucide-react";
 import { toast } from "sonner";
 
