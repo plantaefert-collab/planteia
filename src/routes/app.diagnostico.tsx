@@ -38,6 +38,7 @@ import { DiagnosisFeedback } from "@/components/diagnosis/DiagnosisFeedback";
 type DiagnosticoSearch = { 
   plantId?: string;
   mode?: "acompanhamento";
+  direct?: string;
 };
 
 export const Route = createFileRoute("/app/diagnostico")({
@@ -46,9 +47,9 @@ export const Route = createFileRoute("/app/diagnostico")({
     plantId: typeof search.plantId === "string" ? search.plantId : undefined,
     mode: search.mode === "acompanhamento" ? "acompanhamento" : undefined,
     direct: typeof search.direct === "string" ? search.direct : undefined,
-  } as DiagnosticoSearch),
+  }),
   loader: ({ search }) => {
-    return { direct: (search as any).direct === "camera" };
+    return { direct: search.direct === "camera" };
   },
   component: DiagnosisPage,
 });
