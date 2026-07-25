@@ -336,7 +336,7 @@ function DiagnosisPage() {
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold">
-                            {entry.diagnosis.hypothesis?.title ?? "Diagnóstico"}
+                            {entry.diagnosis.mainSuspicion ?? "Diagnóstico"}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">
                             {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
