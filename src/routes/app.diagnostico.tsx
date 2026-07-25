@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Clock,
   Trash2,
-  Eye
+  Eye,
+  Lightbulb
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,6 +47,43 @@ export const Route = createFileRoute("/app/diagnostico")({
 });
 
 type Step = "intro" | "select" | "objective" | "symptom" | "photos" | "questions" | "review" | "loading" | "result";
+
+function buildHistoryTips(entry: PhotoDiagnosisHistoryEntry): { primary: string; suggestions: string[] } {
+  const d = entry.diagnosis;
+  const suggestions: string[] = [];
+  const daysAgo = Math.floor((Date.now() - new Date(entry.createdAt).getTime()) / 86400000);
+  const photoCount = entry.photos?.length ?? 0;
+  const lowConfidence = d.confidence === "baixa" || d.confidence === "moderada";
+
+  if (photoCount < 2) {
+    suggestions.push("Envie mais ângulos (folha frente/verso e raízes) para elevar a confiança.");
+  }
+  if (lowConfidence) {
+    suggestions.push("Confiança " + d.confidence + " — refaça com luz natural e foco na área afetada.");
+  }
+  if (!entry.symptom) {
+    suggestions.push("Descreva o sintoma principal antes de refazer para orientar a análise.");
+  }
+  if (daysAgo >= (d.reevaluateInDays ?? 7)) {
+    suggestions.push(`Já se passaram ${daysAgo} dia(s) — hora de reavaliar e comparar a evolução.`);
+  } else if (daysAgo >= 1) {
+    suggestions.push(`Reavalie em ${Math.max(1, (d.reevaluateInDays ?? 7) - daysAgo)} dia(s) para medir melhora.`);
+  }
+  if (d.status === "atencao" && (d.urgencySigns?.length ?? 0) > 0) {
+    suggestions.push("Fique atento aos sinais de urgência listados no resultado.");
+  }
+
+  const primary =
+    d.status === "atencao"
+      ? "Requer ação — compare com a próxima foto para ver evolução."
+      : d.status === "acompanhamento"
+        ? "Em observação — mantenha o cronograma e refaça se houver mudança."
+        : "Quadro saudável — refaça só se surgirem novos sinais.";
+
+  return { primary, suggestions: suggestions.slice(0, 2) };
+}
+
+
 
 function DiagnosisPage() {
   const { plantId, mode } = Route.useSearch();
@@ -318,55 +356,72 @@ function DiagnosisPage() {
                       hour: "2-digit",
                       minute: "2-digit",
                     });
+                    const { primary, suggestions } = buildHistoryTips(entry);
                     return (
                       <li
                         key={entry.id}
-                        className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-3 shadow-sm"
                       >
-                        {entry.thumbnail ? (
-                          <img
-                            src={entry.thumbnail}
-                            alt=""
-                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-leaf-soft text-leaf">
-                            <Sparkles className="h-5 w-5" />
+                        <div className="flex items-center gap-3">
+                          {entry.thumbnail ? (
+                            <img
+                              src={entry.thumbnail}
+                              alt=""
+                              className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-leaf-soft text-leaf">
+                              <Sparkles className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">
+                              {entry.diagnosis.mainSuspicion ?? "Diagnóstico"}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
+                            </p>
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">
-                            {entry.diagnosis.mainSuspicion ?? "Diagnóstico"}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
-                          </p>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Ver diagnóstico"
+                              onClick={() => viewHistoryEntry(entry)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Refazer diagnóstico"
+                              onClick={() => rerunHistoryEntry(entry)}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Remover do histórico"
+                              onClick={() => removeHistoryEntry(entry.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Ver diagnóstico"
-                            onClick={() => viewHistoryEntry(entry)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Refazer diagnóstico"
-                            onClick={() => rerunHistoryEntry(entry)}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Remover do histórico"
-                            onClick={() => removeHistoryEntry(entry.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                        <div className="mt-3 rounded-xl bg-leaf-soft/40 p-2.5">
+                          <p className="flex items-start gap-1.5 text-xs font-medium text-foreground">
+                            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-leaf" aria-hidden />
+                            <span>{primary}</span>
+                          </p>
+                          {suggestions.length > 0 && (
+                            <ul className="mt-1.5 space-y-1 pl-5 text-xs text-muted-foreground">
+                              {suggestions.map((s, i) => (
+                                <li key={i} className="list-disc marker:text-leaf">{s}</li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       </li>
                     );
