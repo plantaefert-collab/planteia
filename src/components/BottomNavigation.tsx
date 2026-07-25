@@ -12,7 +12,7 @@ type NavItem = {
 const items: NavItem[] = [
   { to: "/app/inicio", label: "Início", icon: Home },
   { to: "/app/plantas", label: "Plantas", icon: Sprout },
-  { to: "/app/diagnostico", label: "Diagnosticar", icon: Camera, center: true },
+  { to: "/app/diagnostico", label: "Diagnosticar", icon: Camera, center: true, search: { direct: "camera" } },
   { to: "/app/calendario", label: "Calendário", icon: Calendar },
   { to: "/app/jardineiro", label: "Jardineiro", icon: MessageCircle },
 ];
@@ -34,6 +34,7 @@ export function BottomNavigation() {
               <li key={it.to} className="flex items-start justify-center">
                 <Link
                   to={it.to}
+                  search={(it as any).search}
                   className="-mt-6 grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-foreground shadow-lg ring-4 ring-background"
                   aria-label={it.label}
                 >

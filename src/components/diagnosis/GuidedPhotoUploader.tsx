@@ -34,12 +34,21 @@ const requirementsBySymptom: Record<string, PhotoRequirement[]> = {
 export function GuidedPhotoUploader({
   symptom,
   onPhotosChange,
+  initialPhotos = [],
 }: {
   symptom: string;
   onPhotosChange: (photos: string[]) => void;
+  initialPhotos?: string[];
 }) {
   const requirements = requirementsBySymptom[symptom] || requirementsBySymptom.default;
-  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [photos, setPhotos] = useState<Record<string, string>>(() => {
+    // If we have an initial photo (the one from "Quick Capture"), assign it to the first required slot
+    if (initialPhotos.length > 0) {
+      const firstReq = requirements.find(r => r.required) || requirements[0];
+      return { [firstReq.id]: initialPhotos[0] };
+    }
+    return {};
+  });
 
   const handleUpload = (id: string, dataUrl: string) => {
     const next = { ...photos, [id]: dataUrl };

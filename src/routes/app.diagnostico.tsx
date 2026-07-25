@@ -47,6 +47,10 @@ export const Route = createFileRoute("/app/diagnostico")({
     mode: search.mode === "acompanhamento" ? "acompanhamento" : undefined,
   }),
   component: DiagnosisPage,
+  loader: async ({ search }) => {
+    // If we land here with direct=camera, it's a hint to trigger the camera
+    return { direct: (search as any).direct === "camera" };
+  }
 });
 
 type Step = "intro" | "select" | "objective" | "symptom" | "photos" | "questions" | "review" | "loading" | "result";
@@ -90,6 +94,7 @@ function buildHistoryTips(entry: PhotoDiagnosisHistoryEntry): { primary: string;
 
 function DiagnosisPage() {
   const { plantId, mode } = Route.useSearch();
+  const { direct } = Route.useLoaderData() as { direct: boolean };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -109,6 +114,13 @@ function DiagnosisPage() {
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Trigger camera on landing if direct=camera is present
+  useEffect(() => {
+    if (direct && step === "intro" && !photos.length) {
+      cameraInputRef.current?.click();
+    }
+  }, [direct, step, photos.length]);
 
 
   const handleQuickCapture = (file: File | undefined) => {
