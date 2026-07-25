@@ -18,9 +18,13 @@ export function PhotoUploader({
 
   const onFile = (f: File | undefined) => {
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    setPreview(url);
-    onUpload?.(url);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      setPreview(dataUrl);
+      onUpload?.(dataUrl);
+    };
+    reader.readAsDataURL(f);
   };
 
   return (
