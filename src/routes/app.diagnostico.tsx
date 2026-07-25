@@ -649,6 +649,9 @@ function DiagnosisPage() {
             ) : (
               <>
                 <DiagnosisResult d={result} />
+
+                <DiagnosisFeedback diagnosisId={result.id} />
+
                 
                 <div className="flex flex-col gap-3 pb-4">
                   <Button size="lg" className="w-full shadow-lg shadow-leaf/20" onClick={addToPlan}>
