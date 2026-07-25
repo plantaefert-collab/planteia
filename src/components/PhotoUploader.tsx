@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from "react";
-import { Camera, X, Settings2, ShieldAlert } from "lucide-react";
+import { Camera, X, Settings2, ShieldAlert, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { processImageForAi } from "@/lib/image-processing";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -21,16 +22,23 @@ export function PhotoUploader({
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(initialPreview || null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
 
 
-  const onFile = (f: File | undefined) => {
+  const onFile = async (f: File | undefined) => {
     if (!f) return;
+    setIsProcessing(true);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
-      setPreview(dataUrl);
-      onUpload?.(dataUrl);
+      if (dataUrl) {
+        // Melhora a imagem antes de salvar/enviar
+        const processedUrl = await processImageForAi(dataUrl);
+        setPreview(processedUrl);
+        onUpload?.(processedUrl);
+      }
+      setIsProcessing(false);
     };
     reader.readAsDataURL(f);
   };
@@ -123,8 +131,22 @@ export function PhotoUploader({
             </>
           ) : (
             <div className="flex flex-col items-center gap-2 p-6 text-center">
-              <Camera className="h-6 w-6" />
-              <span className="text-sm">Toque para enviar uma foto</span>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-6 w-6 animate-spin text-leaf" />
+                  <span className="text-sm font-medium text-leaf">Otimizando foto...</span>
+                  <p className="text-[10px] text-muted-foreground">Melhorando brilho e nitidez</p>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-6 w-6" />
+                  <span className="text-sm">Toque para enviar uma foto</span>
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-leaf/70">
+                    <Sparkles className="h-3 w-3" />
+                    Otimização automática ativada
+                  </div>
+                </>
+              )}
             </div>
           )}
           <input
