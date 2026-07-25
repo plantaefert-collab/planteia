@@ -355,19 +355,63 @@ function DiagnosisPage() {
         )}
 
         {step === "loading" && (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-border bg-card p-12 text-center shadow-sm py-20">
-            <div className="relative mb-6">
-              <div className="h-20 w-20 rounded-full border-4 border-leaf/10 border-t-leaf animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-leaf" />
-              </div>
-            </div>
-            <h3 className="font-display text-2xl font-semibold text-foreground">
-              Analisando sua planta…
-            </h3>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
-              Cruzando os sinais, fotos, respostas e histórico da planta.
-            </p>
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-border bg-card p-8 text-center shadow-sm py-12">
+            {analysisPhase === "error" ? (
+              <>
+                <div className="mb-6 grid h-20 w-20 place-items-center rounded-full bg-destructive/10 text-destructive">
+                  <AlertCircle className="h-10 w-10" />
+                </div>
+                <h3 className="font-display text-2xl font-semibold text-foreground">
+                  Falha na análise
+                </h3>
+                <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
+                  {analysisError ?? "Não foi possível concluir. Verifique a conexão e tente novamente."}
+                </p>
+                <div className="mt-6 flex flex-col gap-2 w-full max-w-xs">
+                  <Button onClick={analyze}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Tentar novamente
+                  </Button>
+                  <Button variant="ghost" onClick={() => setStep("review")}>
+                    Voltar à revisão
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="relative mb-6">
+                  <div className="h-20 w-20 rounded-full border-4 border-leaf/10 border-t-leaf animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles className="h-8 w-8 text-leaf" />
+                  </div>
+                </div>
+                <h3 className="font-display text-2xl font-semibold text-foreground">
+                  {analysisPhase === "upload"
+                    ? "Enviando fotos…"
+                    : analysisPhase === "analyzing"
+                    ? "Analisando sua planta…"
+                    : "Finalizando diagnóstico…"}
+                </h3>
+                <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
+                  {analysisPhase === "upload"
+                    ? "Preparando as imagens para a IA."
+                    : analysisPhase === "analyzing"
+                    ? "A IA está cruzando sinais visuais, sintomas e respostas."
+                    : "Organizando hipóteses e plano de cuidados."}
+                </p>
+
+                <div className="mt-6 w-full max-w-xs">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-leaf transition-all duration-300 ease-out"
+                      style={{ width: `${analysisProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+                    {analysisProgress}%
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         )}
 
