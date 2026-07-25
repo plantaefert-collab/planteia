@@ -186,7 +186,14 @@ function DiagnosisPage() {
     } catch (error) {
       clearInterval(timer);
       setAnalysisPhase("error");
-      setAnalysisError(error instanceof Error ? error.message : "Erro desconhecido");
+      const code = (error as { code?: string })?.code;
+      const friendly =
+        code === "schema_mismatch"
+          ? "A IA não conseguiu estruturar um diagnóstico confiável desta foto. Tente reenviar com uma imagem mais nítida, bem iluminada e focando a região afetada (folha, raiz ou pseudobulbo)."
+          : error instanceof Error
+          ? error.message
+          : "Erro desconhecido";
+      setAnalysisError(friendly);
       toast.error("Não foi possível concluir a análise.");
     }
   };
