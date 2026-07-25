@@ -354,7 +354,7 @@ function DiagnosisPage() {
                   <h3 className="font-semibold text-sm">Câmera bloqueada</h3>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Para diagnosticar por foto, você precisa permitir o acesso à câmera nas configurações do seu navegador ou dispositivo.
+                  Para diagnosticar por foto, você precisa permitir o acesso à câmera nas configurações do seu navegador ou dispositivo. Implementar um fallback para upload pela galeria quando a câmera nativa falhar ou estiver negada persistentemente.
                 </p>
                 <div className="flex gap-2">
                   <Button 
@@ -394,7 +394,7 @@ function DiagnosisPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">Tirar foto agora</h3>
-                    <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois</p>
+                    <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois. Permitir que eu tire e envie múltiplas fotos em sequência para melhorar a precisão do diagnóstico.</p>
                   </div>
                   <ChevronRight className="h-5 w-5 opacity-80" />
                 </button>
