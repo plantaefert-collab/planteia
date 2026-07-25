@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { chatSuggestions, mockPlants } from "@/lib/mock-data";
+import { chatSuggestions, mockPlants, mockDiagnosesByPlant } from "@/lib/mock-data";
 import { ImagePlus, Send, Sprout, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,11 +16,62 @@ export const Route = createFileRoute("/app/jardineiro")({
 
 function Chat() {
   const [input, setInput] = useState("");
+  const [plantId, setPlantId] = useState<string>(mockPlants[0]?.id ?? "");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const plantIdRef = useRef(plantId);
+  useEffect(() => {
+    plantIdRef.current = plantId;
+  }, [plantId]);
+
+  const activePlant = useMemo(
+    () => mockPlants.find((p) => p.id === plantId) ?? mockPlants[0],
+    [plantId],
+  );
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        prepareSendMessagesRequest: ({ messages, body }) => {
+          const plant = mockPlants.find((p) => p.id === plantIdRef.current);
+          const diag = plant ? mockDiagnosesByPlant[plant.id] : undefined;
+          return {
+            body: {
+              ...body,
+              messages,
+              context: plant
+                ? {
+                    plant: {
+                      nickname: plant.nickname,
+                      species: plant.species,
+                      scientific: plant.scientific,
+                      environment: plant.environment,
+                      light: plant.light,
+                      potSize: plant.potSize,
+                      wateringFrequencyDays: plant.wateringFrequencyDays,
+                      lastWatered: plant.lastWatered,
+                      lastFertilized: plant.lastFertilized,
+                      status: plant.status,
+                    },
+                    lastDiagnosis: diag
+                      ? {
+                          mainSuspicion: diag.mainSuspicion,
+                          status: diag.status,
+                          createdAt: diag.createdAt,
+                        }
+                      : null,
+                  }
+                : undefined,
+            },
+          };
+        },
+      }),
+    [],
+  );
 
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport,
     onError: (err) => {
       toast.error("Não consegui responder agora", {
         description: err.message.includes("429")
