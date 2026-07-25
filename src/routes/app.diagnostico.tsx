@@ -119,8 +119,13 @@ function DiagnosisPage() {
 
   // Trigger camera on landing if direct=camera is present
   useEffect(() => {
-    if (direct && step === "intro" && !photos.length) {
-      cameraInputRef.current?.click();
+    // We check for direct="camera" and ensure we are on the intro step
+    // Using a timeout to ensure the DOM is ready for the click
+    if (direct && step === "intro" && photos.length === 0) {
+      const timer = setTimeout(() => {
+        cameraInputRef.current?.click();
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [direct, step, photos.length]);
 
