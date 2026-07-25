@@ -3,6 +3,14 @@ import type { Diagnosis } from "./types";
 const KEY = "plantae:photo-diagnosis-history";
 const MAX_ENTRIES = 5;
 
+export type DiagnosisFeedbackRating = "acertou" | "errou";
+
+export interface DiagnosisFeedback {
+  rating: DiagnosisFeedbackRating;
+  note?: string;
+  createdAt: string;
+}
+
 export interface PhotoDiagnosisHistoryEntry {
   id: string;
   createdAt: string;
@@ -15,6 +23,7 @@ export interface PhotoDiagnosisHistoryEntry {
   photos: string[]; // data URLs
   thumbnail?: string;
   diagnosis: Diagnosis;
+  feedback?: DiagnosisFeedback;
 }
 
 function read(): PhotoDiagnosisHistoryEntry[] {
