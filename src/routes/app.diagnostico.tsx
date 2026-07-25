@@ -639,6 +639,7 @@ function DiagnosisPage() {
             <GuidedPhotoUploader
               symptom={symptom}
               onPhotosChange={setPhotos}
+              initialPhotos={photos}
             />
 
             <Button className="w-full h-12 text-base" onClick={nextStep}>
