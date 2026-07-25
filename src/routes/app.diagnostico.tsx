@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Clock,
   Trash2,
-  Eye
+  Eye,
+  Lightbulb
 } from "lucide-react";
 import { toast } from "sonner";
 
