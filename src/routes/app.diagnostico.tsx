@@ -116,20 +116,24 @@ function DiagnosisPage() {
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const directCameraHandledRef = useRef(false);
 
   // Trigger camera on landing if direct=camera is present
   useEffect(() => {
-    // We check for direct="camera" and ensure we are on the intro step
-    // Using a longer timeout and checking if we're actually at the intro step
-    if (direct && step === "intro" && photos.length === 0) {
-      const timer = setTimeout(() => {
-        if (cameraInputRef.current) {
-          cameraInputRef.current.click();
-        }
-      }, 800);
-      return () => clearTimeout(timer);
+    if (!direct) {
+      directCameraHandledRef.current = false;
+      return;
     }
-  }, [direct, step, photos.length]);
+
+    if (directCameraHandledRef.current) return;
+
+    const timer = setTimeout(() => {
+      directCameraHandledRef.current = true;
+      cameraInputRef.current?.click();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [direct]);
 
 
   const handleQuickCapture = (file: File | undefined) => {
@@ -141,8 +145,18 @@ function DiagnosisPage() {
       setPhotos((prev) => [...prev, dataUrl]);
       if (!objective) setObjective("identificar");
       setStep(selected ? "symptom" : "select");
+      navigate({
+        to: "/app/diagnostico",
+        search: (prev: any) => ({ ...prev, direct: undefined }),
+        replace: true,
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCameraInputChange = (file: File | undefined, input: HTMLInputElement) => {
+    handleQuickCapture(file);
+    input.value = "";
   };
 
   useEffect(() => {
@@ -330,6 +344,16 @@ function DiagnosisPage() {
         </Button>
       ) : undefined}
     >
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => handleCameraInputChange(e.target.files?.[0], e.currentTarget)}
+        onError={() => setCameraPermissionDenied(true)}
+      />
+
       <div className="mx-auto max-w-lg space-y-6 pb-20">
         <DiagnosisProgress current={step} />
 
@@ -419,18 +443,6 @@ function DiagnosisPage() {
                   </div>
                   <ChevronRight className="h-5 w-5 opacity-80" />
                 </button>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    handleQuickCapture(e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                  onError={() => setCameraPermissionDenied(true)}
-                />
               </>
             )}
 
