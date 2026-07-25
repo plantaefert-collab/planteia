@@ -289,6 +289,91 @@ function DiagnosisPage() {
                 Este diagnóstico é uma <strong>hipótese assistida</strong>. Ele ajuda na decisão, mas não substitui a observação constante.
               </p>
             </div>
+
+            {history.length > 0 && (
+              <section className="space-y-3" aria-label="Diagnósticos recentes">
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
+                    <Clock className="h-4 w-4 text-leaf" />
+                    Últimos diagnósticos por foto
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      diagnosisHistory.clear();
+                      setHistory([]);
+                      toast.success("Histórico limpo.");
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <ul className="space-y-2">
+                  {history.map((entry) => {
+                    const when = new Date(entry.createdAt);
+                    const dateLabel = when.toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    return (
+                      <li
+                        key={entry.id}
+                        className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm"
+                      >
+                        {entry.thumbnail ? (
+                          <img
+                            src={entry.thumbnail}
+                            alt=""
+                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-leaf-soft text-leaf">
+                            <Sparkles className="h-5 w-5" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {entry.diagnosis.hypothesis?.title ?? "Diagnóstico"}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {entry.plantNickname ?? entry.plantSpecies ?? "Sem planta cadastrada"} · {dateLabel}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Ver diagnóstico"
+                            onClick={() => viewHistoryEntry(entry)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Refazer diagnóstico"
+                            onClick={() => rerunHistoryEntry(entry)}
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Remover do histórico"
+                            onClick={() => removeHistoryEntry(entry.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
           </div>
         )}
 
