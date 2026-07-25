@@ -1,34 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { generateText } from "ai";
+import { generateObject } from "ai";
+import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const SYSTEM_PROMPT = `Você é um fitopatologista assistente do Plantae AI, especializado em diagnóstico visual de plantas ornamentais (foco em orquídeas).
-Analise as fotos e o contexto e retorne EXCLUSIVAMENTE um JSON válido, sem markdown, sem crase, sem comentários, com esta estrutura exata:
-
-{
-  "status": "saudavel" | "atencao" | "acompanhamento",
-  "mainSuspicion": string,
-  "confidence": "baixa" | "moderada" | "moderada-alta" | "alta",
-  "observedSigns": string[],
-  "otherPossibilities": string[],
-  "immediateActions": string[],
-  "avoid": string[],
-  "urgencySigns": string[],
-  "whatToObserve": string[],
-  "improvementSigns": string[],
-  "careTimeline": [{ "when": string, "task": string }],
-  "reevaluateInDays": number
-}
+Analise as fotos e o contexto e produza um diagnóstico estruturado.
 
 Regras:
 - Português do Brasil, tom acolhedor e prático.
 - Baseie-se nos sinais visíveis nas fotos; se as fotos não permitirem, reduza a "confidence" e explique em "observedSigns".
 - 3 a 6 itens em cada lista, frases curtas e acionáveis.
-- "reevaluateInDays" entre 3 e 14.
-- NUNCA inclua texto fora do JSON.`;
+- "reevaluateInDays" entre 3 e 14.`;
+
+const DiagnosisSchema = z.object({
+  status: z.enum(["saudavel", "atencao", "acompanhamento"]),
+  mainSuspicion: z.string(),
+  confidence: z.enum(["baixa", "moderada", "moderada-alta", "alta"]),
+  observedSigns: z.array(z.string()),
+  otherPossibilities: z.array(z.string()),
+  immediateActions: z.array(z.string()),
+  avoid: z.array(z.string()),
+  urgencySigns: z.array(z.string()),
+  whatToObserve: z.array(z.string()),
+  improvementSigns: z.array(z.string()),
+  careTimeline: z.array(z.object({ when: z.string(), task: z.string() })),
+  reevaluateInDays: z.number().int().min(3).max(14),
+});
 
 type Body = {
-  photos?: string[]; // data URLs
+  photos?: string[];
   symptom?: string;
   objective?: string;
   answers?: Record<string, unknown>;
@@ -40,7 +40,9 @@ export const Route = createFileRoute("/api/diagnose-photo")({
     handlers: {
       POST: async ({ request }) => {
         const body = (await request.json()) as Body;
-        const photos = Array.isArray(body.photos) ? body.photos.filter((p) => typeof p === "string" && p.startsWith("data:image/")) : [];
+        const photos = Array.isArray(body.photos)
+          ? body.photos.filter((p) => typeof p === "string" && p.startsWith("data:image/"))
+          : [];
 
         const key = process.env.LOVABLE_API_KEY;
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
@@ -63,8 +65,9 @@ export const Route = createFileRoute("/api/diagnose-photo")({
           .join("\n");
 
         try {
-          const { text } = await generateText({
+          const { object } = await generateObject({
             model,
+            schema: DiagnosisSchema,
             system: SYSTEM_PROMPT,
             messages: [
               {
@@ -77,11 +80,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
             ],
           });
 
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) return new Response("Modelo não retornou JSON.", { status: 502 });
-
-          const parsed = JSON.parse(jsonMatch[0]);
-          return Response.json(parsed);
+          return Response.json(object);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Erro desconhecido";
           return new Response(message, { status: 500 });
