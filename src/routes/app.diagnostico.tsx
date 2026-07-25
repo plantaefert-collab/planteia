@@ -86,18 +86,28 @@ function DiagnosisPage() {
     }
   }, [plantId, plants.data, selected]);
 
-  const analyze = async () => {
+  const analyze = async (override?: {
+    plant?: Plant | null;
+    objective?: string;
+    symptom?: string;
+    photos?: string[];
+    answers?: Record<string, any>;
+  }) => {
+    const _plant = override?.plant !== undefined ? override.plant : selected;
+    const _objective = override?.objective ?? objective;
+    const _symptom = override?.symptom ?? symptom;
+    const _photos = override?.photos ?? photos;
+    const _answers = override?.answers ?? answers;
+
     setStep("loading");
     setAnalysisError(null);
     setAnalysisProgress(0);
-    setAnalysisPhase(photos.length > 0 ? "upload" : "analyzing");
+    setAnalysisPhase(_photos.length > 0 ? "upload" : "analyzing");
 
-    // Simulated progress: sobe até 90% enquanto a IA processa; o restante fecha no sucesso.
     const started = Date.now();
     const timer = setInterval(() => {
       const elapsed = Date.now() - started;
-      // Fase upload: 0-25% nos primeiros ~800ms; depois vira "analyzing" até 90%.
-      if (elapsed < 800 && photos.length > 0) {
+      if (elapsed < 800 && _photos.length > 0) {
         setAnalysisProgress((p) => Math.min(25, p + 5));
       } else {
         setAnalysisPhase((prev) => (prev === "upload" ? "analyzing" : prev));
@@ -107,12 +117,12 @@ function DiagnosisPage() {
 
     try {
       const r = await diagnosisService.analyze({
-        plantId: selected?.id,
-        plantSpecies: selected?.species,
-        objective,
-        symptom,
-        photos,
-        answers,
+        plantId: _plant?.id,
+        plantSpecies: _plant?.species,
+        objective: _objective,
+        symptom: _symptom,
+        photos: _photos,
+        answers: _answers,
       });
       clearInterval(timer);
       setAnalysisPhase("finalizing");
