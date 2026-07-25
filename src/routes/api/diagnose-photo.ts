@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { generateObject, NoObjectGeneratedError } from "ai";
-import { z, ZodError } from "zod";
+import { generateText } from "ai";
+import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const SYSTEM_PROMPT = `Você é um fitopatologista assistente do Plantae AI, especializado em diagnóstico visual de plantas ornamentais (foco em orquídeas).
@@ -143,6 +143,44 @@ function buildFallbackDiagnosis(body: Body, reason: "model_error" | "schema_mism
   };
 }
 
+// Instrução explícita de saída JSON — substitui o "structured output" (generateObject),
+// que não é honrado pelo AI Gateway com este provider/modelo e fazia todo diagnóstico
+// cair no fallback genérico. Aqui o modelo devolve JSON como texto e nós parseamos.
+const JSON_INSTRUCTION = `Responda EXCLUSIVAMENTE com um objeto JSON válido — sem markdown, sem cercas de código, sem qualquer texto antes ou depois. Use exatamente estas chaves:
+{
+  "status": "saudavel" | "atencao" | "acompanhamento",
+  "mainSuspicion": "hipótese principal específica desta planta",
+  "confidence": "baixa" | "moderada" | "moderada-alta" | "alta",
+  "observedSigns": ["sinais que você realmente vê NESTA foto"],
+  "otherPossibilities": ["hipóteses alternativas"],
+  "immediateActions": ["ações imediatas"],
+  "avoid": ["o que evitar"],
+  "urgencySigns": ["sinais de urgência"],
+  "whatToObserve": ["o que observar nos próximos dias"],
+  "improvementSigns": ["sinais de melhora"],
+  "careTimeline": [{ "when": "quando", "task": "tarefa" }],
+  "reevaluateInDays": 7
+}
+Regras do JSON: cada lista com 3 a 6 itens curtos e acionáveis; "reevaluateInDays" é um inteiro entre 3 e 14. Baseie "observedSigns" e "mainSuspicion" no que é visível NESTA imagem específica — não repita respostas genéricas.`;
+
+// Extrai um objeto JSON de uma resposta em texto (tolera cercas de código e texto ao redor).
+function extractJson(text: string): unknown {
+  if (!text) return null;
+  let t = text.trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const first = t.indexOf("{");
+  const last = t.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) {
+    t = t.slice(first, last + 1);
+  }
+  try {
+    return JSON.parse(t);
+  } catch {
+    return null;
+  }
+}
+
 export const Route = createFileRoute("/api/diagnose-photo")({
   server: {
     handlers: {
@@ -183,37 +221,36 @@ export const Route = createFileRoute("/api/diagnose-photo")({
           .join("\n");
 
         try {
-          const { object } = await generateObject({
+          const { text } = await generateText({
             model,
-            schema: DiagnosisSchema,
             system: SYSTEM_PROMPT,
+            temperature: 0.3,
             messages: [
               {
                 role: "user",
                 content: [
-                  { type: "text", text: contextText },
+                  { type: "text", text: `${contextText}\n\n${JSON_INSTRUCTION}` },
                   ...photos.map((url) => ({ type: "image" as const, image: url })),
                 ],
               },
             ],
           });
 
-          return Response.json(normalizeDiagnosis(object));
+          const result = DiagnosisSchema.safeParse(extractJson(text));
+
+          if (!result.success) {
+            console.warn(
+              `[AI MONITOR] Resposta da IA fora do schema. Fotos: ${photos.length}. Campos: ${result.error.issues
+                .map((i) => i.path.join("."))
+                .join(", ")}`,
+            );
+            return Response.json(buildFallbackDiagnosis(body, "schema_mismatch"));
+          }
+
+          return Response.json(normalizeDiagnosis(result.data));
         } catch (err) {
           console.error("AI Diagnosis Error:", err);
-          
-          // Log para monitoramento (simulado - em produção usaria uma ferramenta de observability)
-          if (photos.length > 0) {
-            console.warn(`[AI MONITOR] Falha na análise estruturada. Fotos: ${photos.length}. Contexto: ${contextText.substring(0, 100)}...`);
-          }
-          
-          const isSchemaMismatch =
-            NoObjectGeneratedError.isInstance?.(err) ||
-            err instanceof ZodError ||
-            (err instanceof Error && /schema|validation|parse|zod/i.test(err.message));
-
-          const fallbackReason = isSchemaMismatch ? "schema_mismatch" : "model_error";
-          return Response.json(buildFallbackDiagnosis(body, fallbackReason));
+          return Response.json(buildFallbackDiagnosis(body, "model_error"));
         }
       },
     },
