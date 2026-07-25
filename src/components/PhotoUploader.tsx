@@ -1,9 +1,15 @@
 import { useRef, useState, useEffect } from "react";
-import { Camera, X, Settings2, ShieldAlert, Sparkles, Loader2 } from "lucide-react";
+import { Camera, X, Settings2, ShieldAlert, Sparkles, Loader2, Lightbulb, Focus, Maximize } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { processImageForAi } from "@/lib/image-processing";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 export function PhotoUploader({
@@ -66,8 +72,36 @@ export function PhotoUploader({
   return (
 
     <div className={cn("space-y-2", className)}>
-      <div className="flex items-baseline justify-between">
-        <p className="text-sm font-medium text-foreground">{label}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground hover:text-leaf transition-colors">
+                  <Lightbulb className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[200px] p-3 text-xs">
+                <p className="font-semibold mb-1">Dicas para uma foto perfeita:</p>
+                <ul className="space-y-1.5">
+                  <li className="flex gap-2">
+                    <Maximize className="h-3 w-3 shrink-0 text-leaf" />
+                    <span><strong>Ângulo:</strong> Mostre a planta inteira ou o detalhe frontal.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Focus className="h-3 w-3 shrink-0 text-leaf" />
+                    <span><strong>Foco:</strong> Evite tremer e espere a câmera focar na mancha.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Sparkles className="h-3 w-3 shrink-0 text-leaf" />
+                    <span><strong>Luz:</strong> Prefira luz natural. Evite sombras fortes ou contra-luz.</span>
+                  </li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
       {permissionDenied ? (

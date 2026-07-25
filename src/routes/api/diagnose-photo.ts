@@ -86,6 +86,11 @@ export const Route = createFileRoute("/api/diagnose-photo")({
         } catch (err) {
           console.error("AI Diagnosis Error:", err);
           
+          // Log para monitoramento (simulado - em produção usaria uma ferramenta de observability)
+          if (photos.length > 0) {
+            console.warn(`[AI MONITOR] Falha na análise estruturada. Fotos: ${photos.length}. Contexto: ${contextText.substring(0, 100)}...`);
+          }
+          
           const isSchemaMismatch =
             NoObjectGeneratedError.isInstance?.(err) ||
             err instanceof ZodError ||
