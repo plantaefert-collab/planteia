@@ -58,6 +58,9 @@ function DiagnosisPage() {
   const [result, setResult] = useState<Diagnosis | null>(null);
   const [isPlanAdded, setIsPlanAdded] = useState(false);
   const [addedPlan, setAddedPlan] = useState<CarePlan | null>(null);
+  const [analysisPhase, setAnalysisPhase] = useState<"upload" | "analyzing" | "finalizing" | "error">("upload");
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
 
@@ -76,6 +79,23 @@ function DiagnosisPage() {
 
   const analyze = async () => {
     setStep("loading");
+    setAnalysisError(null);
+    setAnalysisProgress(0);
+    setAnalysisPhase(photos.length > 0 ? "upload" : "analyzing");
+
+    // Simulated progress: sobe até 90% enquanto a IA processa; o restante fecha no sucesso.
+    const started = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - started;
+      // Fase upload: 0-25% nos primeiros ~800ms; depois vira "analyzing" até 90%.
+      if (elapsed < 800 && photos.length > 0) {
+        setAnalysisProgress((p) => Math.min(25, p + 5));
+      } else {
+        setAnalysisPhase((prev) => (prev === "upload" ? "analyzing" : prev));
+        setAnalysisProgress((p) => Math.min(90, p + 3));
+      }
+    }, 200);
+
     try {
       const r = await diagnosisService.analyze({
         plantId: selected?.id,
@@ -85,11 +105,16 @@ function DiagnosisPage() {
         photos,
         answers,
       });
+      clearInterval(timer);
+      setAnalysisPhase("finalizing");
+      setAnalysisProgress(100);
       setResult(r);
-      setStep("result");
+      setTimeout(() => setStep("result"), 300);
     } catch (error) {
-      setStep("review");
-      toast.error("Não foi possível concluir a análise. Tente novamente.");
+      clearInterval(timer);
+      setAnalysisPhase("error");
+      setAnalysisError(error instanceof Error ? error.message : "Erro desconhecido");
+      toast.error("Não foi possível concluir a análise.");
     }
   };
 
