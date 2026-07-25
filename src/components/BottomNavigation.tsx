@@ -7,6 +7,7 @@ type NavItem = {
   label: string;
   icon: typeof Home;
   center?: boolean;
+  search?: Record<string, any>;
 };
 
 const items: NavItem[] = [

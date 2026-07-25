@@ -48,7 +48,6 @@ export const Route = createFileRoute("/app/diagnostico")({
   }),
   component: DiagnosisPage,
   loader: async ({ search }) => {
-    // If we land here with direct=camera, it's a hint to trigger the camera
     return { direct: (search as any).direct === "camera" };
   }
 });
