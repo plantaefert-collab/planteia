@@ -65,6 +65,11 @@ function DiagnosisPage() {
   const [analysisPhase, setAnalysisPhase] = useState<"upload" | "analyzing" | "finalizing" | "error">("upload");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
+
+  useEffect(() => {
+    setHistory(diagnosisHistory.list());
+  }, []);
 
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
 
