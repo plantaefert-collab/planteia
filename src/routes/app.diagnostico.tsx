@@ -118,6 +118,21 @@ function DiagnosisPage() {
       setAnalysisPhase("finalizing");
       setAnalysisProgress(100);
       setResult(r);
+      if (photos.length > 0) {
+        try {
+          diagnosisHistory.add({
+            plantId: selected?.id,
+            plantNickname: selected?.nickname,
+            plantSpecies: selected?.species,
+            symptom,
+            objective,
+            answers,
+            photos,
+            diagnosis: r,
+          });
+          setHistory(diagnosisHistory.list());
+        } catch { /* ignore storage errors */ }
+      }
       setTimeout(() => setStep("result"), 300);
     } catch (error) {
       clearInterval(timer);
@@ -125,6 +140,34 @@ function DiagnosisPage() {
       setAnalysisError(error instanceof Error ? error.message : "Erro desconhecido");
       toast.error("Não foi possível concluir a análise.");
     }
+  };
+
+  const viewHistoryEntry = (entry: PhotoDiagnosisHistoryEntry) => {
+    const plant = plants.data?.find((p) => p.id === entry.plantId) ?? null;
+    setSelected(plant);
+    setObjective(entry.objective ?? "");
+    setSymptom(entry.symptom ?? "");
+    setPhotos(entry.photos);
+    setAnswers((entry.answers as Record<string, any>) ?? {});
+    setResult(entry.diagnosis);
+    setIsPlanAdded(false);
+    setStep("result");
+  };
+
+  const rerunHistoryEntry = async (entry: PhotoDiagnosisHistoryEntry) => {
+    const plant = plants.data?.find((p) => p.id === entry.plantId) ?? null;
+    setSelected(plant);
+    setObjective(entry.objective ?? "");
+    setSymptom(entry.symptom ?? "");
+    setPhotos(entry.photos);
+    setAnswers((entry.answers as Record<string, any>) ?? {});
+    await analyze();
+  };
+
+  const removeHistoryEntry = (id: string) => {
+    diagnosisHistory.remove(id);
+    setHistory(diagnosisHistory.list());
+    toast.success("Diagnóstico removido do histórico.");
   };
 
   const addToPlan = async () => {
