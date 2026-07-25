@@ -342,6 +342,10 @@ function DiagnosisPage() {
         <Button variant="ghost" size="icon" onClick={prevStep}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+      ) : step === "result" ? (
+        <Button variant="ghost" size="icon" onClick={() => setStep("intro")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
       ) : undefined}
     >
       <input

@@ -166,7 +166,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
-        const model = gateway("google/gemini-3.6-flash");
+        const model = gateway("google/gemini-1.5-flash");
 
         const contextText = [
           body.plantSpecies ? `Espécie: ${body.plantSpecies}` : null,
