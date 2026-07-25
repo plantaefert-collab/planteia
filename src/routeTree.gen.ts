@@ -26,6 +26,7 @@ import { Route as AppInicioRouteImport } from './routes/app.inicio'
 import { Route as AppDiarioRouteImport } from './routes/app.diario'
 import { Route as AppDiagnosticoRouteImport } from './routes/app.diagnostico'
 import { Route as AppCalendarioRouteImport } from './routes/app.calendario'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas.nova'
 import { Route as AppPlantasIdRouteImport } from './routes/app.plantas.$id'
 
@@ -114,6 +115,11 @@ const AppCalendarioRoute = AppCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppPlantasNovaRoute = AppPlantasNovaRouteImport.update({
   id: '/nova',
   path: '/nova',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
+  '/api/chat': typeof ApiChatRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
+  '/api/chat': typeof ApiChatRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
+  '/api/chat': typeof ApiChatRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/wireframe'
+    | '/api/chat'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/wireframe'
+    | '/api/chat'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/wireframe'
+    | '/api/chat'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   WireframeRoute: typeof WireframeRoute
+  ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalendarioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/plantas/nova': {
       id: '/app/plantas/nova'
       path: '/nova'
@@ -459,17 +479,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   WireframeRoute: WireframeRoute,
+  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
