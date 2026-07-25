@@ -373,8 +373,8 @@ function DiagnosisPage() {
                     size="sm" 
                     className="flex-1 text-xs h-8 underline"
                     onClick={() => {
-                      toast.info("Geralmente fica no ícone de 'cadeado' na barra de endereços.", {
-                        duration: 5000,
+                      toast.info("Geralmente fica no ícone de 'cadeado' na barra de endereços. Adicione um tutorial visual curto para iOS/Android explicando como liberar a câmera no PWA.", {
+                        duration: 7000,
                       });
                     }}
                   >
