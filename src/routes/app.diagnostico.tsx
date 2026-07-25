@@ -171,7 +171,13 @@ function DiagnosisPage() {
     setSymptom(entry.symptom ?? "");
     setPhotos(entry.photos);
     setAnswers((entry.answers as Record<string, any>) ?? {});
-    await analyze();
+    await analyze({
+      plant,
+      objective: entry.objective ?? "",
+      symptom: entry.symptom ?? "",
+      photos: entry.photos,
+      answers: (entry.answers as Record<string, any>) ?? {},
+    });
   };
 
   const removeHistoryEntry = (id: string) => {
