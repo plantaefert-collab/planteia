@@ -31,6 +31,7 @@ import { SymptomSelector } from "@/components/diagnosis/SymptomSelector";
 import { GuidedPhotoUploader } from "@/components/diagnosis/GuidedPhotoUploader";
 import { DynamicQuestionnaire } from "@/components/diagnosis/DynamicQuestionnaire";
 import { DiagnosisReview } from "@/components/diagnosis/DiagnosisReview";
+import { DiagnosisFeedback } from "@/components/diagnosis/DiagnosisFeedback";
 
 type DiagnosticoSearch = { 
   plantId?: string;
@@ -648,6 +649,9 @@ function DiagnosisPage() {
             ) : (
               <>
                 <DiagnosisResult d={result} />
+
+                <DiagnosisFeedback diagnosisId={result.id} />
+
                 
                 <div className="flex flex-col gap-3 pb-4">
                   <Button size="lg" className="w-full shadow-lg shadow-leaf/20" onClick={addToPlan}>

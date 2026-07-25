@@ -3,6 +3,14 @@ import type { Diagnosis } from "./types";
 const KEY = "plantae:photo-diagnosis-history";
 const MAX_ENTRIES = 5;
 
+export type DiagnosisFeedbackRating = "acertou" | "errou";
+
+export interface DiagnosisFeedback {
+  rating: DiagnosisFeedbackRating;
+  note?: string;
+  createdAt: string;
+}
+
 export interface PhotoDiagnosisHistoryEntry {
   id: string;
   createdAt: string;
@@ -15,6 +23,7 @@ export interface PhotoDiagnosisHistoryEntry {
   photos: string[]; // data URLs
   thumbnail?: string;
   diagnosis: Diagnosis;
+  feedback?: DiagnosisFeedback;
 }
 
 function read(): PhotoDiagnosisHistoryEntry[] {
@@ -67,6 +76,25 @@ export const diagnosisHistory = {
   },
   remove(id: string) {
     write(read().filter((e) => e.id !== id));
+  },
+  setFeedback(diagnosisId: string, feedback: Omit<DiagnosisFeedback, "createdAt"> | null) {
+    const all = read();
+    const idx = all.findIndex((e) => e.diagnosis.id === diagnosisId);
+    if (idx === -1) return null;
+    if (feedback === null) {
+      const { feedback: _, ...rest } = all[idx];
+      all[idx] = rest as PhotoDiagnosisHistoryEntry;
+    } else {
+      all[idx] = {
+        ...all[idx],
+        feedback: { ...feedback, createdAt: new Date().toISOString() },
+      };
+    }
+    write(all);
+    return all[idx];
+  },
+  getByDiagnosisId(diagnosisId: string) {
+    return read().find((e) => e.diagnosis.id === diagnosisId);
   },
   clear() {
     write([]);
