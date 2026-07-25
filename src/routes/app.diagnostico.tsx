@@ -48,6 +48,43 @@ export const Route = createFileRoute("/app/diagnostico")({
 
 type Step = "intro" | "select" | "objective" | "symptom" | "photos" | "questions" | "review" | "loading" | "result";
 
+function buildHistoryTips(entry: PhotoDiagnosisHistoryEntry): { primary: string; suggestions: string[] } {
+  const d = entry.diagnosis;
+  const suggestions: string[] = [];
+  const daysAgo = Math.floor((Date.now() - new Date(entry.createdAt).getTime()) / 86400000);
+  const photoCount = entry.photos?.length ?? 0;
+  const lowConfidence = d.confidence === "baixa" || d.confidence === "moderada";
+
+  if (photoCount < 2) {
+    suggestions.push("Envie mais ângulos (folha frente/verso e raízes) para elevar a confiança.");
+  }
+  if (lowConfidence) {
+    suggestions.push("Confiança " + d.confidence + " — refaça com luz natural e foco na área afetada.");
+  }
+  if (!entry.symptom) {
+    suggestions.push("Descreva o sintoma principal antes de refazer para orientar a análise.");
+  }
+  if (daysAgo >= (d.reevaluateInDays ?? 7)) {
+    suggestions.push(`Já se passaram ${daysAgo} dia(s) — hora de reavaliar e comparar a evolução.`);
+  } else if (daysAgo >= 1) {
+    suggestions.push(`Reavalie em ${Math.max(1, (d.reevaluateInDays ?? 7) - daysAgo)} dia(s) para medir melhora.`);
+  }
+  if (d.status === "atencao" && (d.urgencySigns?.length ?? 0) > 0) {
+    suggestions.push("Fique atento aos sinais de urgência listados no resultado.");
+  }
+
+  const primary =
+    d.status === "atencao"
+      ? "Requer ação — compare com a próxima foto para ver evolução."
+      : d.status === "acompanhamento"
+        ? "Em observação — mantenha o cronograma e refaça se houver mudança."
+        : "Quadro saudável — refaça só se surgirem novos sinais.";
+
+  return { primary, suggestions: suggestions.slice(0, 2) };
+}
+
+
+
 function DiagnosisPage() {
   const { plantId, mode } = Route.useSearch();
   const navigate = useNavigate();
