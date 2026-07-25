@@ -410,7 +410,7 @@ function DiagnosisPage() {
               onEdit={(s) => setStep(s as Step)}
             />
 
-            <Button className="w-full h-12 text-base shadow-lg shadow-leaf/20" onClick={analyze}>
+            <Button className="w-full h-12 text-base shadow-lg shadow-leaf/20" onClick={() => analyze()}>
               <Sparkles className="h-5 w-5 mr-2" /> Analisar Planta
             </Button>
           </div>
@@ -430,7 +430,7 @@ function DiagnosisPage() {
                   {analysisError ?? "Não foi possível concluir. Verifique a conexão e tente novamente."}
                 </p>
                 <div className="mt-6 flex flex-col gap-2 w-full max-w-xs">
-                  <Button onClick={analyze}>
+                  <Button onClick={() => analyze()}>
                     <RefreshCw className="h-4 w-4 mr-2" /> Tentar novamente
                   </Button>
                   <Button variant="ghost" onClick={() => setStep("review")}>
