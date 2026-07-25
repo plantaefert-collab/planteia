@@ -368,7 +368,7 @@ function DiagnosisPage() {
                   <h3 className="font-semibold text-sm">Câmera bloqueada</h3>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Para diagnosticar por foto, você precisa permitir o acesso à câmera nas configurações do seu navegador ou dispositivo. Implementar um fallback para upload pela galeria quando a câmera nativa falhar ou estiver negada persistentemente.
+                  Para diagnosticar por foto, você precisa permitir o acesso à câmera nas configurações do seu navegador ou dispositivo. Caso a câmera não funcione, você pode selecionar uma foto da sua galeria.
                 </p>
                 <div className="flex gap-2">
                   <Button 
@@ -387,7 +387,7 @@ function DiagnosisPage() {
                     size="sm" 
                     className="flex-1 text-xs h-8 underline"
                     onClick={() => {
-                      toast.info("Geralmente fica no ícone de 'cadeado' na barra de endereços. Criar um tutorial visual curto para iOS/Android com o passo a passo para liberar a câmera no PWA.", {
+                      toast.info("Geralmente fica no ícone de 'cadeado' ou 'ajustes' na barra de endereços do seu navegador.", {
                         duration: 7000,
                       });
                     }}
@@ -408,7 +408,7 @@ function DiagnosisPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">Tirar foto agora</h3>
-                    <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois. Permitir que eu tire e envie múltiplas fotos em sequência para melhorar a precisão do diagnóstico.</p>
+                    <p className="text-xs opacity-90">Abre a câmera direto — o questionário vem depois. Você poderá adicionar mais fotos durante o processo.</p>
                   </div>
                   <ChevronRight className="h-5 w-5 opacity-80" />
                 </button>
