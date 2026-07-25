@@ -165,15 +165,23 @@ function Chat() {
         </div>
 
         <div className="sticky bottom-0 border-t border-border bg-background pt-3">
-          <div className="mb-2 flex items-center gap-2">
-            <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-              <Sprout className="h-3.5 w-3.5" />
-              {mockPlants[0].nickname}
-            </button>
-            <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-              <ImagePlus className="h-3.5 w-3.5" />
-              Anexar foto
-            </button>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Falando sobre:</span>
+            {mockPlants.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPlantId(p.id)}
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition ${
+                  activePlant?.id === p.id
+                    ? "border-leaf bg-leaf-soft text-leaf"
+                    : "border-border bg-card text-muted-foreground hover:border-leaf"
+                }`}
+              >
+                <Sprout className="h-3.5 w-3.5" />
+                {p.nickname}
+              </button>
+            ))}
           </div>
           <form
             onSubmit={(e) => {
