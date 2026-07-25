@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { chatSuggestions, mockPlants } from "@/lib/mock-data";
+import { chatSuggestions, mockPlants, mockDiagnosesByPlant } from "@/lib/mock-data";
 import { ImagePlus, Send, Sprout, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,11 +16,62 @@ export const Route = createFileRoute("/app/jardineiro")({
 
 function Chat() {
   const [input, setInput] = useState("");
+  const [plantId, setPlantId] = useState<string>(mockPlants[0]?.id ?? "");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const plantIdRef = useRef(plantId);
+  useEffect(() => {
+    plantIdRef.current = plantId;
+  }, [plantId]);
+
+  const activePlant = useMemo(
+    () => mockPlants.find((p) => p.id === plantId) ?? mockPlants[0],
+    [plantId],
+  );
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        prepareSendMessagesRequest: ({ messages, body }) => {
+          const plant = mockPlants.find((p) => p.id === plantIdRef.current);
+          const diag = plant ? mockDiagnosesByPlant[plant.id] : undefined;
+          return {
+            body: {
+              ...body,
+              messages,
+              context: plant
+                ? {
+                    plant: {
+                      nickname: plant.nickname,
+                      species: plant.species,
+                      scientific: plant.scientific,
+                      environment: plant.environment,
+                      light: plant.light,
+                      potSize: plant.potSize,
+                      wateringFrequencyDays: plant.wateringFrequencyDays,
+                      lastWatered: plant.lastWatered,
+                      lastFertilized: plant.lastFertilized,
+                      status: plant.status,
+                    },
+                    lastDiagnosis: diag
+                      ? {
+                          mainSuspicion: diag.mainSuspicion,
+                          status: diag.status,
+                          createdAt: diag.createdAt,
+                        }
+                      : null,
+                  }
+                : undefined,
+            },
+          };
+        },
+      }),
+    [],
+  );
 
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport,
     onError: (err) => {
       toast.error("Não consegui responder agora", {
         description: err.message.includes("429")
@@ -114,15 +165,23 @@ function Chat() {
         </div>
 
         <div className="sticky bottom-0 border-t border-border bg-background pt-3">
-          <div className="mb-2 flex items-center gap-2">
-            <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-              <Sprout className="h-3.5 w-3.5" />
-              {mockPlants[0].nickname}
-            </button>
-            <button className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-              <ImagePlus className="h-3.5 w-3.5" />
-              Anexar foto
-            </button>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Falando sobre:</span>
+            {mockPlants.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPlantId(p.id)}
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition ${
+                  activePlant?.id === p.id
+                    ? "border-leaf bg-leaf-soft text-leaf"
+                    : "border-border bg-card text-muted-foreground hover:border-leaf"
+                }`}
+              >
+                <Sprout className="h-3.5 w-3.5" />
+                {p.nickname}
+              </button>
+            ))}
           </div>
           <form
             onSubmit={(e) => {
