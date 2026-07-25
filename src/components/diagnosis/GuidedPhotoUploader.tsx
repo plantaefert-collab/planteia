@@ -42,12 +42,16 @@ export function GuidedPhotoUploader({
 }) {
   const requirements = requirementsBySymptom[symptom] || requirementsBySymptom.default;
   const [photos, setPhotos] = useState<Record<string, string>>(() => {
-    // If we have an initial photo (the one from "Quick Capture"), assign it to the first required slot
-    if (initialPhotos.length > 0) {
-      const firstReq = requirements.find(r => r.required) || requirements[0];
-      return { [firstReq.id]: initialPhotos[0] };
-    }
-    return {};
+    // We map initialPhotos to the available slots.
+    // The user suggested they could be "complementary" photos or the first one.
+    // Here we fill the slots in order of requirements.
+    const initialMap: Record<string, string> = {};
+    initialPhotos.forEach((photo, index) => {
+      if (requirements[index]) {
+        initialMap[requirements[index].id] = photo;
+      }
+    });
+    return initialMap;
   });
 
   const handleUpload = (id: string, dataUrl: string) => {
@@ -63,7 +67,7 @@ export function GuidedPhotoUploader({
       <div className="grid grid-cols-2 gap-3">
         {requirements.map((req) => (
           <div key={req.id} className="space-y-1">
-            <PhotoUploader label={req.label} onUpload={(url) => handleUpload(req.id, url)} />
+            <PhotoUploader label={req.label} onUpload={(url) => handleUpload(req.id, url)} initialPreview={photos[req.id]} />
             <p className="px-1 text-[10px] text-muted-foreground leading-tight">
               {req.required && <span className="text-leaf font-medium">Obrigatória: </span>}
               {req.instruction}

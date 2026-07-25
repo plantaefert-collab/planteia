@@ -10,15 +10,18 @@ export function PhotoUploader({
   hint,
   className,
   onUpload,
+  initialPreview,
 }: {
   label: string;
   hint?: string;
   className?: string;
   onUpload?: (url: string) => void;
+  initialPreview?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialPreview || null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+
 
 
   const onFile = (f: File | undefined) => {
