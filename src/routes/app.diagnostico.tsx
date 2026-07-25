@@ -48,9 +48,10 @@ export const Route = createFileRoute("/app/diagnostico")({
     mode: search.mode === "acompanhamento" ? "acompanhamento" : undefined,
     direct: typeof search.direct === "string" ? search.direct : undefined,
   }),
-  loader: ({ search }) => {
-    return { direct: search.direct === "camera" };
+  loader: (ctx) => {
+    return { direct: (ctx.deps as any).direct === "camera" };
   },
+  loaderDeps: ({ search }) => ({ direct: search.direct }),
   component: DiagnosisPage,
 });
 
