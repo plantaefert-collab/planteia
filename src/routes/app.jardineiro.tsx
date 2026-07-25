@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { AppShell } from "@/components/AppShell";
-import { AIMessage } from "@/components/AIMessage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { chatService } from "@/lib/services";
 import { chatSuggestions, mockPlants } from "@/lib/mock-data";
-import type { ChatMessage } from "@/lib/types";
 import { ImagePlus, Send, Sprout, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/jardineiro")({
   head: () => ({ meta: [{ title: "Jardineiro IA · Plantae AI" }] }),
@@ -15,50 +15,85 @@ export const Route = createFileRoute("/app/jardineiro")({
 });
 
 function Chat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    onError: (err) => {
+      toast.error("Não consegui responder agora", {
+        description: err.message.includes("429")
+          ? "Muitas requisições. Aguarde alguns segundos."
+          : err.message.includes("402")
+            ? "Créditos de IA esgotados. Recarregue no workspace."
+            : "Tente novamente em instantes.",
+      });
+    },
+  });
+
+  const isLoading = status === "submitted" || status === "streaming";
 
   useEffect(() => {
-    chatService.initial().then(setMessages);
-  }, []);
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, status]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+    if (!isLoading) inputRef.current?.focus();
+  }, [isLoading]);
 
   const send = async (text: string) => {
-    if (!text.trim()) return;
-    const user: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((m) => [...m, user]);
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
     setInput("");
-    setLoading(true);
-    const reply = await chatService.ask(text);
-    setMessages((m) => [...m, reply]);
-    setLoading(false);
+    await sendMessage({ text: trimmed });
   };
 
   return (
     <AppShell title="Jardineiro IA">
       <div className="flex h-[calc(100vh-10rem)] flex-col md:h-[calc(100vh-9rem)]">
         <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto pb-4">
-          {messages.map((m) => (
-            <AIMessage key={m.id} message={m} />
-          ))}
-          {loading && (
+          {messages.length === 0 && (
+            <div className="rounded-2xl border border-border bg-card p-4 text-sm text-foreground/90">
+              Olá! Sou o <strong>Jardineiro IA</strong>. Me conte um sintoma,
+              descreva a rotina de cuidado ou peça orientação sobre sua planta.
+            </div>
+          )}
+
+          {messages.map((m) => {
+            const text = m.parts
+              .map((p) => (p.type === "text" ? p.text : ""))
+              .join("");
+            const isUser = m.role === "user";
+            return (
+              <div
+                key={m.id}
+                className={isUser ? "flex justify-end" : "flex justify-start"}
+              >
+                <div
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm ${
+                    isUser
+                      ? "bg-leaf text-primary-foreground"
+                      : "border border-border bg-card text-foreground"
+                  }`}
+                >
+                  {text}
+                </div>
+              </div>
+            );
+          })}
+
+          {isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               O Jardineiro está pensando…
             </div>
           )}
 
-          {messages.length <= 1 && (
+          {messages.length === 0 && (
             <div className="mt-6 space-y-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Sugestões
@@ -97,6 +132,7 @@ function Chat() {
             className="flex items-end gap-2"
           >
             <Textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Pergunte ao Jardineiro IA…"
@@ -109,7 +145,11 @@ function Chat() {
                 }
               }}
             />
-            <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={isLoading || !input.trim()}
+            >
               <Send className="h-4 w-4" />
             </Button>
           </form>
