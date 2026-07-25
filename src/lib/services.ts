@@ -53,22 +53,60 @@ export const productsService = {
 };
 
 export const diagnosisService = {
-  async analyze(input: { 
-    plantId?: string; 
-    objective?: string; 
-    symptom?: string; 
+  async analyze(input: {
+    plantId?: string;
+    plantSpecies?: string;
+    objective?: string;
+    symptom?: string;
     photos?: string[];
     answers?: Record<string, any>;
   }): Promise<Diagnosis> {
-    await wait(1500);
-    // Find a scenario based on symptom
-    const scenarioId = input.symptom === "folhas_amarelas" ? "excesso_umidade" : 
-                      input.symptom === "folhas_murchas" ? "falta_agua" :
-                      input.symptom === "folhas_queimadas" ? "excesso_luz" :
-                      input.symptom === "pragas" ? "pragas" : "investigacao";
-    
+    const photos = (input.photos ?? []).filter((p) => p.startsWith("data:image/"));
+
+    // If we have photos, ask the AI to analyze them.
+    if (photos.length > 0) {
+      const res = await fetch("/api/diagnose-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photos,
+          symptom: input.symptom,
+          objective: input.objective,
+          answers: input.answers,
+          plantSpecies: input.plantSpecies,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const ai = await res.json();
+      return {
+        id: crypto.randomUUID(),
+        plantId: input.plantId,
+        createdAt: new Date().toISOString(),
+        status: ai.status ?? "acompanhamento",
+        mainSuspicion: ai.mainSuspicion ?? "Análise inconclusiva",
+        confidence: ai.confidence ?? "moderada",
+        observedSigns: ai.observedSigns ?? [],
+        otherPossibilities: ai.otherPossibilities ?? [],
+        immediateActions: ai.immediateActions ?? [],
+        avoid: ai.avoid ?? [],
+        urgencySigns: ai.urgencySigns ?? [],
+        whatToObserve: ai.whatToObserve ?? [],
+        improvementSigns: ai.improvementSigns ?? [],
+        careTimeline: ai.careTimeline ?? [],
+        reevaluateInDays: typeof ai.reevaluateInDays === "number" ? ai.reevaluateInDays : 7,
+      };
+    }
+
+    // Fallback: cenário simulado por sintoma quando não há fotos.
+    await wait(800);
+    const scenarioId =
+      input.symptom === "folhas_amarelas" ? "excesso_umidade" :
+      input.symptom === "folhas_murchas" ? "falta_agua" :
+      input.symptom === "folhas_queimadas" ? "excesso_luz" :
+      input.symptom === "pragas" ? "pragas" : "investigacao";
+
     const scenario = mockData.diagnosisScenarios[scenarioId];
-    
+
     return {
       id: crypto.randomUUID(),
       plantId: input.plantId,

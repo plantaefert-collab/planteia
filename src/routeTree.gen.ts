@@ -26,6 +26,7 @@ import { Route as AppInicioRouteImport } from './routes/app.inicio'
 import { Route as AppDiarioRouteImport } from './routes/app.diario'
 import { Route as AppDiagnosticoRouteImport } from './routes/app.diagnostico'
 import { Route as AppCalendarioRouteImport } from './routes/app.calendario'
+import { Route as ApiDiagnosePhotoRouteImport } from './routes/api/diagnose-photo'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas.nova'
 import { Route as AppPlantasIdRouteImport } from './routes/app.plantas.$id'
@@ -115,6 +116,11 @@ const AppCalendarioRoute = AppCalendarioRouteImport.update({
   path: '/calendario',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiDiagnosePhotoRoute = ApiDiagnosePhotoRouteImport.update({
+  id: '/api/diagnose-photo',
+  path: '/api/diagnose-photo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/diagnose-photo': typeof ApiDiagnosePhotoRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/diagnose-photo': typeof ApiDiagnosePhotoRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/wireframe': typeof WireframeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/diagnose-photo': typeof ApiDiagnosePhotoRoute
   '/app/calendario': typeof AppCalendarioRoute
   '/app/diagnostico': typeof AppDiagnosticoRoute
   '/app/diario': typeof AppDiarioRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/wireframe'
     | '/api/chat'
+    | '/api/diagnose-photo'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/wireframe'
     | '/api/chat'
+    | '/api/diagnose-photo'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/wireframe'
     | '/api/chat'
+    | '/api/diagnose-photo'
     | '/app/calendario'
     | '/app/diagnostico'
     | '/app/diario'
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   WireframeRoute: typeof WireframeRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiDiagnosePhotoRoute: typeof ApiDiagnosePhotoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -395,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalendarioRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/diagnose-photo': {
+      id: '/api/diagnose-photo'
+      path: '/api/diagnose-photo'
+      fullPath: '/api/diagnose-photo'
+      preLoaderRoute: typeof ApiDiagnosePhotoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -480,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   WireframeRoute: WireframeRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiDiagnosePhotoRoute: ApiDiagnosePhotoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

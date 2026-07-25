@@ -52,7 +52,8 @@ function DiagnosisPage() {
   const [selected, setSelected] = useState<Plant | null>(null);
   const [objective, setObjective] = useState<string>("");
   const [symptom, setSymptom] = useState<string>("");
-  const [photoCount, setPhotoCount] = useState(0);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const photoCount = photos.length;
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [result, setResult] = useState<Diagnosis | null>(null);
   const [isPlanAdded, setIsPlanAdded] = useState(false);
@@ -76,11 +77,13 @@ function DiagnosisPage() {
   const analyze = async () => {
     setStep("loading");
     try {
-      const r = await diagnosisService.analyze({ 
+      const r = await diagnosisService.analyze({
         plantId: selected?.id,
+        plantSpecies: selected?.species,
         objective,
         symptom,
-        answers
+        photos,
+        answers,
       });
       setResult(r);
       setStep("result");
@@ -276,9 +279,9 @@ function DiagnosisPage() {
               </p>
             </div>
             
-            <GuidedPhotoUploader 
-              symptom={symptom} 
-              onPhotosChange={setPhotoCount} 
+            <GuidedPhotoUploader
+              symptom={symptom}
+              onPhotosChange={setPhotos}
             />
 
             <Button className="w-full h-12 text-base" onClick={nextStep}>
