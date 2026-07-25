@@ -76,7 +76,20 @@ export const diagnosisService = {
           plantSpecies: input.plantSpecies,
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        let code = "generation_failed";
+        let message = "Não foi possível concluir a análise.";
+        try {
+          const errBody = await res.json();
+          if (errBody?.error) code = errBody.error;
+          if (errBody?.message) message = errBody.message;
+        } catch {
+          try { message = await res.text(); } catch { /* ignore */ }
+        }
+        const error = new Error(message) as Error & { code?: string };
+        error.code = code;
+        throw error;
+      }
       const ai = await res.json();
       return {
         id: crypto.randomUUID(),
