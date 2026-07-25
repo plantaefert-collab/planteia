@@ -2,17 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { generateText } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { DIAGNOSIS_SYSTEM_PROMPT } from "@/lib/ai-persona";
 
-const SYSTEM_PROMPT = `Você é um fitopatologista assistente do Plantae AI, especializado em diagnóstico visual de plantas ornamentais (foco em orquídeas).
-Analise as fotos e o contexto e produza um diagnóstico estruturado.
-
-Regras:
-- Português do Brasil, tom acolhedor, profissional e prático.
-- Baseie-se nos sinais visíveis nas fotos.
-- MESMO SE AS FOTOS FOREM DE MÁ QUALIDADE, BORRADAS OU NÃO MOSTRAREM UMA PLANTA CLARAMENTE, você DEVE gerar um diagnóstico. Use seu conhecimento botânico para inferir o estado da planta a partir de cores, sombras ou texturas.
-- NUNCA diga que não pode realizar a análise. Se houver dúvida extrema, use confiança "baixa" e sugira o que o usuário deve observar melhor.
-- 3 a 6 itens em cada lista, frases curtas e acionáveis.
-- "reevaluateInDays" entre 3 e 14.`;
+const SYSTEM_PROMPT = DIAGNOSIS_SYSTEM_PROMPT;
 
 const DiagnosisSchema = z.object({
   status: z.enum(["saudavel", "atencao", "acompanhamento"]),
