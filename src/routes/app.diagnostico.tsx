@@ -107,6 +107,20 @@ function DiagnosisPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleQuickCapture = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) return;
+      setPhotos((prev) => [...prev, dataUrl]);
+      if (!objective) setObjective("identificar");
+      setStep(selected ? "symptom" : "select");
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     setHistory(diagnosisHistory.list());
