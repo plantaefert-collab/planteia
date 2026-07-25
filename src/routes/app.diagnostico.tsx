@@ -38,6 +38,7 @@ import { DiagnosisFeedback } from "@/components/diagnosis/DiagnosisFeedback";
 type DiagnosticoSearch = { 
   plantId?: string;
   mode?: "acompanhamento";
+  direct?: string;
 };
 
 export const Route = createFileRoute("/app/diagnostico")({
@@ -45,7 +46,12 @@ export const Route = createFileRoute("/app/diagnostico")({
   validateSearch: (search: Record<string, unknown>): DiagnosticoSearch => ({
     plantId: typeof search.plantId === "string" ? search.plantId : undefined,
     mode: search.mode === "acompanhamento" ? "acompanhamento" : undefined,
+    direct: typeof search.direct === "string" ? search.direct : undefined,
   }),
+  loader: (ctx) => {
+    return { direct: (ctx.deps as any).direct === "camera" };
+  },
+  loaderDeps: ({ search }) => ({ direct: search.direct }),
   component: DiagnosisPage,
 });
 
@@ -90,6 +96,7 @@ function buildHistoryTips(entry: PhotoDiagnosisHistoryEntry): { primary: string;
 
 function DiagnosisPage() {
   const { plantId, mode } = Route.useSearch();
+  const { direct } = Route.useLoaderData() as { direct: boolean };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -109,6 +116,13 @@ function DiagnosisPage() {
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Trigger camera on landing if direct=camera is present
+  useEffect(() => {
+    if (direct && step === "intro" && !photos.length) {
+      cameraInputRef.current?.click();
+    }
+  }, [direct, step, photos.length]);
 
 
   const handleQuickCapture = (file: File | undefined) => {
@@ -627,6 +641,7 @@ function DiagnosisPage() {
             <GuidedPhotoUploader
               symptom={symptom}
               onPhotosChange={setPhotos}
+              initialPhotos={photos}
             />
 
             <Button className="w-full h-12 text-base" onClick={nextStep}>
