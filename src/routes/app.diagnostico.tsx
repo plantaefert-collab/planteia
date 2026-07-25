@@ -31,6 +31,7 @@ import { SymptomSelector } from "@/components/diagnosis/SymptomSelector";
 import { GuidedPhotoUploader } from "@/components/diagnosis/GuidedPhotoUploader";
 import { DynamicQuestionnaire } from "@/components/diagnosis/DynamicQuestionnaire";
 import { DiagnosisReview } from "@/components/diagnosis/DiagnosisReview";
+import { DiagnosisFeedback } from "@/components/diagnosis/DiagnosisFeedback";
 
 type DiagnosticoSearch = { 
   plantId?: string;
