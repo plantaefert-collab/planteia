@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from "react";
-import { Camera, X, Settings2, ShieldAlert, Sparkles, Loader2, Lightbulb, Focus, Maximize } from "lucide-react";
+import { Camera, X, Settings2, ShieldAlert, Sparkles, Loader2, Lightbulb, Focus, Maximize, Sliders, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { processImageForAi } from "@/lib/image-processing";
+import { processImageForAi, calculateBlurriness } from "@/lib/image-processing";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
@@ -10,6 +10,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
+import { toast } from "sonner";
 
 
 export function PhotoUploader({
@@ -29,8 +31,19 @@ export function PhotoUploader({
   const [preview, setPreview] = useState<string | null>(initialPreview || null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [brightness, setBrightness] = useState(1.1);
+  const [contrast, setContrast] = useState(1.15);
+  const [showAdjustments, setShowAdjustments] = useState(false);
+  const [isBlurry, setIsBlurry] = useState(false);
+  const [rawImage, setRawImage] = useState<string | null>(null);
 
-
+  const applyAdjustments = async (sourceUrl: string, b: number, c: number) => {
+    setIsProcessing(true);
+    const processedUrl = await processImageForAi(sourceUrl, { brightness: b, contrast: c });
+    setPreview(processedUrl);
+    onUpload?.(processedUrl);
+    setIsProcessing(false);
+  };
 
   const onFile = async (f: File | undefined) => {
     if (!f) return;
@@ -39,10 +52,19 @@ export function PhotoUploader({
     reader.onload = async () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       if (dataUrl) {
-        // Melhora a imagem antes de salvar/enviar
-        const processedUrl = await processImageForAi(dataUrl);
-        setPreview(processedUrl);
-        onUpload?.(processedUrl);
+        setRawImage(dataUrl);
+        
+        // Detecção de foto borrada
+        const blurScore = await calculateBlurriness(dataUrl);
+        if (blurScore < 8) {
+          setIsBlurry(true);
+          toast.warning("Foto possivelmente borrada. Tente focar melhor para um diagnóstico mais preciso.");
+        } else {
+          setIsBlurry(false);
+        }
+
+        // Processamento inicial automático
+        await applyAdjustments(dataUrl, brightness, contrast);
       }
       setIsProcessing(false);
     };
@@ -157,19 +179,89 @@ export function PhotoUploader({
                 onClick={(e) => {
                   e.stopPropagation();
                   setPreview(null);
+                  setRawImage(null);
+                  setIsBlurry(false);
                 }}
-                className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow"
+                className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow z-10"
               >
                 <X className="h-4 w-4" />
               </span>
+              
+              {/* Ajustes manuais */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAdjustments(!showAdjustments);
+                }}
+                className={cn(
+                  "absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/90 text-foreground shadow z-10 transition-colors",
+                  showAdjustments && "text-leaf"
+                )}
+              >
+                <Sliders className="h-4 w-4" />
+              </button>
+
+              {isBlurry && !showAdjustments && (
+                <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-yellow-500/90 p-2 text-[10px] text-white backdrop-blur flex items-center gap-1.5 z-10">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <span>Foto borrada detectada</span>
+                </div>
+              )}
+
+              {showAdjustments && (
+                <div 
+                  className="absolute inset-0 bg-background/80 backdrop-blur-sm p-4 flex flex-col justify-center gap-6 z-20"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] font-medium">
+                      <span>Brilho</span>
+                      <span>{Math.round(brightness * 100)}%</span>
+                    </div>
+                    <Slider
+                      value={[brightness]}
+                      min={0.5}
+                      max={2.0}
+                      step={0.05}
+                      onValueChange={([val]) => {
+                        setBrightness(val);
+                        if (rawImage) applyAdjustments(rawImage, val, contrast);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] font-medium">
+                      <span>Contraste</span>
+                      <span>{Math.round(contrast * 100)}%</span>
+                    </div>
+                    <Slider
+                      value={[contrast]}
+                      min={0.5}
+                      max={2.0}
+                      step={0.05}
+                      onValueChange={([val]) => {
+                        setContrast(val);
+                        if (rawImage) applyAdjustments(rawImage, brightness, val);
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="mt-2 h-8 text-xs" 
+                    onClick={() => setShowAdjustments(false)}
+                  >
+                    Pronto
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center gap-2 p-6 text-center">
               {isProcessing ? (
                 <>
                   <Loader2 className="h-6 w-6 animate-spin text-leaf" />
-                  <span className="text-sm font-medium text-leaf">Otimizando foto...</span>
-                  <p className="text-[10px] text-muted-foreground">Melhorando brilho e nitidez</p>
+                  <span className="text-sm font-medium text-leaf">Processando...</span>
                 </>
               ) : (
                 <>
