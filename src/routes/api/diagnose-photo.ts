@@ -244,13 +244,34 @@ export const Route = createFileRoute("/api/diagnose-photo")({
                 .map((i) => i.path.join("."))
                 .join(", ")}`,
             );
-            return Response.json(buildFallbackDiagnosis(body, "schema_mismatch"));
+            return Response.json({
+              ...buildFallbackDiagnosis(body, "schema_mismatch"),
+              _debug: {
+                branch: "schema_mismatch",
+                rawText: (text ?? "").slice(0, 800),
+                issues: result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).slice(0, 12),
+              },
+            });
           }
 
           return Response.json(normalizeDiagnosis(result.data));
         } catch (err) {
           console.error("AI Diagnosis Error:", err);
-          return Response.json(buildFallbackDiagnosis(body, "model_error"));
+          const e = err as { name?: string; message?: string; cause?: unknown; statusCode?: number; responseBody?: unknown };
+          return Response.json({
+            ...buildFallbackDiagnosis(body, "model_error"),
+            _debug: {
+              branch: "model_error",
+              name: e?.name ?? null,
+              message: (e?.message ?? "").slice(0, 800),
+              statusCode: e?.statusCode ?? null,
+              responseBody: typeof e?.responseBody === "string" ? e.responseBody.slice(0, 500) : e?.responseBody ?? null,
+              cause: (() => {
+                const c = e?.cause as { message?: string } | undefined;
+                return c?.message ? c.message.slice(0, 500) : String(c ?? "").slice(0, 300);
+              })(),
+            },
+          });
         }
       },
     },
