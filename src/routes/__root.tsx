@@ -83,17 +83,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Assistente inteligente da PlantaeFert para cuidar melhor de cada planta. Diagnóstico assistido, plano personalizado e lembretes.",
+          "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas.",
       },
       { name: "author", content: "PlantaeFert" },
       { property: "og:title", content: "Plantae AI — Seu jardineiro inteligente" },
       {
         property: "og:description",
         content:
-          "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas.",
+          "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Plantae AI — Seu jardineiro inteligente" },
+      { name: "twitter:description", content: "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

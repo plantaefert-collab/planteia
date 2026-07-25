@@ -21,7 +21,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Cuide melhor de cada planta com um assistente inteligente. Diagnóstico, plano e lembretes.",
+          "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas.",
       },
     ],
   }),
