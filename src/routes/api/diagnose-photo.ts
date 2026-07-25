@@ -8,7 +8,8 @@ Analise as fotos e o contexto e produza um diagnóstico estruturado.
 
 Regras:
 - Português do Brasil, tom acolhedor e prático.
-- Baseie-se nos sinais visíveis nas fotos; se as fotos não permitirem, reduza a "confidence" e explique em "observedSigns".
+- Baseie-se nos sinais visíveis nas fotos.
+- SE AS FOTOS FOREM DE MÁ QUALIDADE, BORRADAS OU NÃO MOSTRAREM UMA PLANTA, tente dar o melhor palpite possível com confiança "baixa" ou "moderada", mas NÃO negue o diagnóstico completamente a menos que seja impossível ver qualquer coisa.
 - 3 a 6 itens em cada lista, frases curtas e acionáveis.
 - "reevaluateInDays" entre 3 e 14.`;
 
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
-        const model = gateway("google/gemini-3.6-flash");
+        const model = gateway("google/gemini-1.5-flash"); // Using a very stable vision model
 
         const contextText = [
           body.plantSpecies ? `Espécie: ${body.plantSpecies}` : null,
@@ -82,7 +83,8 @@ export const Route = createFileRoute("/api/diagnose-photo")({
 
           return Response.json(object);
         } catch (err) {
-          // Schema/parse failure: modelo respondeu, mas fora do formato esperado.
+          console.error("AI Diagnosis Error:", err);
+          
           const isSchemaMismatch =
             NoObjectGeneratedError.isInstance?.(err) ||
             err instanceof ZodError ||
@@ -93,7 +95,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
               {
                 error: "schema_mismatch",
                 message:
-                  "A IA não conseguiu estruturar um diagnóstico confiável a partir desta foto. Tente reenviar com uma imagem mais nítida, bem iluminada e enquadrando a região afetada.",
+                  "A IA não conseguiu estruturar um diagnóstico confiável desta foto. Tente reenviar com uma imagem mais nítida, bem iluminada e focando a região afetada (folha, raiz ou pseudobulbo).",
               },
               { status: 422 },
             );
