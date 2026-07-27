@@ -6,7 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { chatSuggestions, mockPlants, mockDiagnosesByPlant } from "@/lib/mock-data";
-import { ImagePlus, Send, Sprout, Loader2 } from "lucide-react";
+import { ImagePlus, Send, Sprout, Loader2, X } from "lucide-react";
+import { processImageForAi } from "@/lib/image-processing";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/jardineiro")({
@@ -17,8 +18,11 @@ export const Route = createFileRoute("/app/jardineiro")({
 function Chat() {
   const [input, setInput] = useState("");
   const [plantId, setPlantId] = useState<string>(mockPlants[0]?.id ?? "");
+  const [attachment, setAttachment] = useState<string | null>(null);
+  const [isProcessingImg, setIsProcessingImg] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const plantIdRef = useRef(plantId);
   useEffect(() => {
     plantIdRef.current = plantId;
@@ -98,9 +102,37 @@ function Chat() {
 
   const send = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && !attachment) || isLoading) return;
+    const img = attachment;
     setInput("");
-    await sendMessage({ text: trimmed });
+    setAttachment(null);
+    await sendMessage({
+      text: trimmed || "Segue a foto da minha planta. O que você observa?",
+      ...(img
+        ? { files: [{ type: "file" as const, mediaType: "image/jpeg", url: img }] }
+        : {}),
+    });
+  };
+
+  const onPickImage = async (file: File | undefined, input: HTMLInputElement) => {
+    input.value = "";
+    if (!file) return;
+    setIsProcessingImg(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      if (!dataUrl) return;
+      const processed = await processImageForAi(dataUrl);
+      setAttachment(processed);
+    } catch {
+      toast.error("Não consegui carregar a imagem.");
+    } finally {
+      setIsProcessingImg(false);
+    }
   };
 
   return (
@@ -118,6 +150,12 @@ function Chat() {
             const text = m.parts
               .map((p) => (p.type === "text" ? p.text : ""))
               .join("");
+            const images = m.parts.filter(
+              (p: any) =>
+                p.type === "file" &&
+                typeof p.url === "string" &&
+                (p.mediaType ?? "").startsWith("image/"),
+            ) as any[];
             const isUser = m.role === "user";
             return (
               <div
@@ -125,13 +163,21 @@ function Chat() {
                 className={isUser ? "flex justify-end" : "flex justify-start"}
               >
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm ${
+                  className={`max-w-[85%] space-y-2 overflow-hidden rounded-2xl px-3.5 py-2.5 text-sm ${
                     isUser
                       ? "bg-leaf text-primary-foreground"
                       : "border border-border bg-card text-foreground"
                   }`}
                 >
-                  {text}
+                  {images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img.url}
+                      alt="Foto enviada"
+                      className="max-h-48 w-full rounded-lg object-cover"
+                    />
+                  ))}
+                  {text && <p className="whitespace-pre-wrap">{text}</p>}
                 </div>
               </div>
             );
@@ -183,6 +229,33 @@ function Chat() {
               </button>
             ))}
           </div>
+          {attachment && (
+            <div className="mb-2 flex items-center gap-2">
+              <div className="relative">
+                <img
+                  src={attachment}
+                  alt="Prévia da foto"
+                  className="h-16 w-16 rounded-lg object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAttachment(null)}
+                  aria-label="Remover foto"
+                  className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-foreground text-background shadow"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              <span className="text-xs text-muted-foreground">Foto anexada</span>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onPickImage(e.target.files?.[0], e.currentTarget)}
+          />
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -190,11 +263,25 @@ function Chat() {
             }}
             className="flex items-end gap-2"
           >
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              disabled={isLoading || isProcessingImg}
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Anexar foto"
+            >
+              {isProcessingImg ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+            </Button>
             <Textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte ao Jardineiro IA…"
+              placeholder="Pergunte ou envie uma foto…"
               rows={1}
               className="min-h-11 resize-none"
               onKeyDown={(e) => {
@@ -207,7 +294,7 @@ function Chat() {
             <Button
               type="submit"
               size="icon"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || (!input.trim() && !attachment)}
             >
               <Send className="h-4 w-4" />
             </Button>

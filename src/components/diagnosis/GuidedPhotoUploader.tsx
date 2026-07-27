@@ -76,14 +76,38 @@ export function GuidedPhotoUploader({
         ))}
       </div>
 
-      {count === 0 && (
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium text-foreground">
+            {count}/3 fotos {count >= 3 ? "✓" : ""}
+          </span>
+          <span className="text-muted-foreground">Quanto mais ângulos, maior a confiança</span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-leaf transition-all duration-300"
+            style={{ width: `${Math.min(100, (count / 3) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {count === 0 ? (
         <Alert className="bg-warning-soft/30 border-warning/20">
           <Info className="h-4 w-4 text-warning" />
           <AlertDescription className="text-xs">
-            Sem fotos, a orientação será preliminar e terá confiança reduzida.
+            Sem fotos, a orientação será preliminar e terá confiança reduzida. O ideal são 3 fotos
+            (planta inteira, detalhe do sinal e base/raízes) — mas você pode analisar mesmo assim.
           </AlertDescription>
         </Alert>
-      )}
+      ) : count < 3 ? (
+        <Alert className="bg-leaf-soft/30 border-leaf/20">
+          <Info className="h-4 w-4 text-leaf" />
+          <AlertDescription className="text-xs">
+            Boa! Adicione mais {3 - count} foto(s) de outro ângulo para um diagnóstico mais confiável —
+            ou siga para a análise se preferir.
+          </AlertDescription>
+        </Alert>
+      ) : null}
     </div>
   );
 }

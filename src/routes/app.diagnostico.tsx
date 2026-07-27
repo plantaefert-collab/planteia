@@ -7,6 +7,7 @@ import { diagnosisService, plantsService, carePlanService } from "@/lib/services
 import { DiagnosisResult } from "@/components/DiagnosisResult";
 import type { Diagnosis, Plant, CarePlan } from "@/lib/types";
 import { diagnosisHistory, type PhotoDiagnosisHistoryEntry } from "@/lib/diagnosis-history";
+import { pendingCapture } from "@/lib/pending-capture";
 import { 
   Sparkles, 
   Loader2, 
@@ -29,7 +30,7 @@ import { toast } from "sonner";
 // Diagnosis components
 import { DiagnosisProgress } from "@/components/diagnosis/DiagnosisProgress";
 import { DiagnosisIntentSelector } from "@/components/diagnosis/DiagnosisIntentSelector";
-import { SymptomSelector } from "@/components/diagnosis/SymptomSelector";
+import { SymptomSelector, symptomsToText } from "@/components/diagnosis/SymptomSelector";
 import { GuidedPhotoUploader } from "@/components/diagnosis/GuidedPhotoUploader";
 import { DynamicQuestionnaire } from "@/components/diagnosis/DynamicQuestionnaire";
 import { DiagnosisReview } from "@/components/diagnosis/DiagnosisReview";
@@ -96,14 +97,14 @@ function buildHistoryTips(entry: PhotoDiagnosisHistoryEntry): { primary: string;
 
 function DiagnosisPage() {
   const { plantId, mode } = Route.useSearch();
-  const { direct } = Route.useLoaderData() as { direct: boolean };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
   const [step, setStep] = useState<Step>("intro");
   const [selected, setSelected] = useState<Plant | null>(null);
   const [objective, setObjective] = useState<string>("");
-  const [symptom, setSymptom] = useState<string>("");
+  const [symptoms, setSymptoms] = useState<string[]>([]);
+  const symptomText = symptomsToText(symptoms);
   const [photos, setPhotos] = useState<string[]>([]);
   const photoCount = photos.length;
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -116,24 +117,17 @@ function DiagnosisPage() {
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const directCameraHandledRef = useRef(false);
 
-  // Trigger camera on landing if direct=camera is present
+  // Consome a foto capturada pelo botão da barra inferior: entra direto no
+  // passo de sintomas com a 1ª foto já salva (entrada fluida, sem "pulo").
   useEffect(() => {
-    if (!direct) {
-      directCameraHandledRef.current = false;
-      return;
+    const captured = pendingCapture.take();
+    if (captured) {
+      setPhotos([captured]);
+      setObjective((o) => o || "identificar");
+      setStep("symptom");
     }
-
-    if (directCameraHandledRef.current) return;
-
-    const timer = setTimeout(() => {
-      directCameraHandledRef.current = true;
-      cameraInputRef.current?.click();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [direct]);
+  }, []);
 
 
   const handleQuickCapture = (file: File | undefined) => {
@@ -144,12 +138,7 @@ function DiagnosisPage() {
       if (!dataUrl) return;
       setPhotos((prev) => [...prev, dataUrl]);
       if (!objective) setObjective("identificar");
-      setStep(selected ? "symptom" : "select");
-      navigate({
-        to: "/app/diagnostico",
-        search: (prev: any) => ({ ...prev, direct: undefined }),
-        replace: true,
-      });
+      setStep("symptom");
     };
     reader.readAsDataURL(file);
   };
@@ -196,7 +185,7 @@ function DiagnosisPage() {
   }) => {
     const _plant = override?.plant !== undefined ? override.plant : selected;
     const _objective = override?.objective ?? objective;
-    const _symptom = override?.symptom ?? symptom;
+    const _symptom = override?.symptom ?? symptomText;
     const _photos = override?.photos ?? photos;
     const _answers = override?.answers ?? answers;
 
@@ -235,7 +224,7 @@ function DiagnosisPage() {
             plantId: selected?.id,
             plantNickname: selected?.nickname,
             plantSpecies: selected?.species,
-            symptom,
+            symptom: symptomText,
             objective,
             answers,
             photos,
@@ -264,7 +253,7 @@ function DiagnosisPage() {
     const plant = plants.data?.find((p) => p.id === entry.plantId) ?? null;
     setSelected(plant);
     setObjective(entry.objective ?? "");
-    setSymptom(entry.symptom ?? "");
+    setSymptoms([]);
     setPhotos(entry.photos);
     setAnswers((entry.answers as Record<string, any>) ?? {});
     setResult(entry.diagnosis);
@@ -276,7 +265,7 @@ function DiagnosisPage() {
     const plant = plants.data?.find((p) => p.id === entry.plantId) ?? null;
     setSelected(plant);
     setObjective(entry.objective ?? "");
-    setSymptom(entry.symptom ?? "");
+    setSymptoms([]);
     setPhotos(entry.photos);
     setAnswers((entry.answers as Record<string, any>) ?? {});
     await analyze({
@@ -638,17 +627,27 @@ function DiagnosisPage() {
             <div className="space-y-2">
               <h2 className="font-display text-xl font-semibold">O que você está observando?</h2>
               <p className="text-sm text-muted-foreground">
-                Selecione o sinal mais evidente no momento.
+                Marque todos os sinais que a planta está mostrando — pode ser mais de um.
               </p>
             </div>
-            
-            <SymptomSelector 
-              selected={symptom} 
-              onSelect={(id) => {
-                setSymptom(id);
-                nextStep();
-              }} 
+
+            <SymptomSelector
+              selected={symptoms}
+              onToggle={(id) =>
+                setSymptoms((prev) =>
+                  prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+                )
+              }
             />
+
+            <Button
+              className="w-full h-12 text-base"
+              onClick={nextStep}
+              disabled={symptoms.length === 0}
+            >
+              Continuar
+              {symptoms.length > 0 && ` (${symptoms.length} selecionado${symptoms.length > 1 ? "s" : ""})`}
+            </Button>
           </div>
         )}
 
@@ -662,7 +661,7 @@ function DiagnosisPage() {
             </div>
             
             <GuidedPhotoUploader
-              symptom={symptom}
+              symptom={symptoms[0] ?? "default"}
               onPhotosChange={setPhotos}
               initialPhotos={photos}
             />
@@ -682,9 +681,9 @@ function DiagnosisPage() {
               </p>
             </div>
             
-            <DynamicQuestionnaire 
-              symptom={symptom} 
-              answers={answers} 
+            <DynamicQuestionnaire
+              symptom={symptoms[0] ?? ""}
+              answers={answers}
               onChange={(id, val) => setAnswers((prev: Record<string, any>) => ({ ...prev, [id]: val }))} 
 
             />
@@ -697,10 +696,10 @@ function DiagnosisPage() {
 
         {step === "review" && (
           <div className="space-y-6">
-            <DiagnosisReview 
+            <DiagnosisReview
               plant={selected}
               objective={objective}
-              symptom={symptom}
+              symptom={symptomText}
               photoCount={photoCount}
               answers={answers}
               onEdit={(s) => setStep(s as Step)}
