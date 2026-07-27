@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as LabPlantasRouteImport } from './routes/lab.plantas'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthRecoverRouteImport } from './routes/auth.recover'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -60,6 +61,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const LabPlantasRoute = LabPlantasRouteImport.update({
+  id: '/lab/plantas',
+  path: '/lab/plantas',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/plantas': typeof LabPlantasRoute
   '/app': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
   '/app/plantas/nova': typeof AppPlantasNovaRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/lab/plantas'
     | '/app/'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/lab/plantas'
     | '/app'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/recover'
     | '/auth/signup'
+    | '/lab/plantas'
     | '/app/'
     | '/app/plantas/$id'
     | '/app/plantas/nova'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   WireframeRoute: typeof WireframeRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiDiagnosePhotoRoute: typeof ApiDiagnosePhotoRoute
+  LabPlantasRoute: typeof LabPlantasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/lab/plantas': {
+      id: '/lab/plantas'
+      path: '/lab/plantas'
+      fullPath: '/lab/plantas'
+      preLoaderRoute: typeof LabPlantasRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
       id: '/auth/signup'
@@ -501,7 +521,18 @@ const rootRouteChildren: RootRouteChildren = {
   WireframeRoute: WireframeRoute,
   ApiChatRoute: ApiChatRoute,
   ApiDiagnosePhotoRoute: ApiDiagnosePhotoRoute,
+  LabPlantasRoute: LabPlantasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
