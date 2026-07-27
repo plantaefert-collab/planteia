@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleSignInButton, OrDivider } from "@/components/GoogleSignInButton";
+
 
 export const Route = createFileRoute("/auth/signup")({
   component: Signup,
@@ -15,8 +17,12 @@ function Signup() {
       <p className="mt-1 text-sm text-muted-foreground">
         Gratuito para começar. Sem cartão.
       </p>
+      <div className="mt-6">
+        <GoogleSignInButton label="Cadastrar com Google" />
+        <OrDivider />
+      </div>
       <form
-        className="mt-6 space-y-4"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           navigate({ to: "/onboarding" });
