@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { lovable } from "@/integrations/lovable";
+import { destinoPosLogin } from "@/lib/auth-helpers";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +24,9 @@ export function GoogleSignInButton({ label = "Continuar com Google" }: { label?:
         return;
       }
       if (result.redirected) return;
-      navigate({ to: "/app/inicio" });
+      // Quem entra pela primeira vez ainda não respondeu as boas-vindas.
+      const destino = await destinoPosLogin();
+      navigate({ to: destino });
     } catch (err) {
       toast.error("Erro inesperado", {
         description: err instanceof Error ? err.message : "Tente novamente.",

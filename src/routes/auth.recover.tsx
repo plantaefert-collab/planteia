@@ -3,7 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { traduzErroAuth } from "@/lib/auth-helpers";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/recover")({
   component: Recover,
@@ -11,6 +14,26 @@ export const Route = createFileRoute("/auth/recover")({
 
 function Recover() {
   const [sent, setSent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const enviar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/login`,
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (err) {
+      toast.error("Não consegui enviar", { description: traduzErroAuth(err) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold">Recuperar senha</h1>
@@ -25,18 +48,20 @@ function Recover() {
           </div>
         </div>
       ) : (
-        <form
-          className="mt-6 space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
-        >
+        <form className="mt-6 space-y-4" onSubmit={enviar}>
           <div className="space-y-1.5">
             <Label htmlFor="email">E-mail</Label>
-            <Input id="email" type="email" required />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar link
           </Button>
         </form>
