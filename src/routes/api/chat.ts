@@ -8,6 +8,12 @@ const SYSTEM_PROMPT = CHAT_SYSTEM_PROMPT;
 type ChatBody = {
   messages?: unknown;
   context?: {
+    user?: {
+      name?: string | null;
+      level?: string | null;
+      city?: string | null;
+      goal?: string | null;
+    } | null;
     plant?: {
       nickname?: string;
       species?: string;
@@ -28,6 +34,40 @@ type ChatBody = {
   };
 };
 
+/**
+ * Bloco de contexto do usuário. Independente da planta selecionada — vale
+ * mesmo quando a conversa é geral. Alimenta as regras de nome e de modulação
+ * do tom definidas na persona.
+ */
+function buildUserBlock(user: NonNullable<ChatBody["context"]>["user"]): string | null {
+  if (!user) return null;
+  const nivelLabel: Record<string, string> = {
+    iniciante: "iniciante (explique com calma, poucos passos, sem jargão)",
+    intermediario: "intermediário (pode justificar tecnicamente)",
+    avancado: "avançado (pode aprofundar)",
+    profissional: "profissional (pode usar termos técnicos e doses)",
+  };
+  const objetivoLabel: Record<string, string> = {
+    recuperar: "recuperar uma planta debilitada",
+    florescer: "melhorar a floração",
+    organizar: "organizar os cuidados",
+    aprender: "aprender sobre cultivo",
+  };
+
+  const lines = [
+    user.name ? `- Nome: ${user.name}` : null,
+    user.level ? `- Nível de experiência: ${nivelLabel[user.level] ?? user.level}` : null,
+    user.city
+      ? `- Cidade/região: ${user.city} (considere o clima local quando fizer diferença)`
+      : null,
+    user.goal ? `- Objetivo principal: ${objetivoLabel[user.goal] ?? user.goal}` : null,
+  ].filter(Boolean);
+
+  if (lines.length === 0) return null;
+
+  return `# Quem é o usuário\n${lines.join("\n")}\n\nUse o nome com moderação, seguindo a regra de nome da persona. Ajuste a profundidade da resposta ao nível informado.`;
+}
+
 function buildContextBlock(context: ChatBody["context"]): string | null {
   if (!context?.plant) return null;
   const p = context.plant;
@@ -42,7 +82,9 @@ function buildContextBlock(context: ChatBody["context"]): string | null {
     p.environment ? `- Ambiente: ${p.environment}` : null,
     p.light ? `- Luz: ${p.light}` : null,
     p.potSize ? `- Vaso: ${p.potSize}` : null,
-    p.wateringFrequencyDays ? `- Frequência de rega habitual: a cada ${p.wateringFrequencyDays} dia(s)` : null,
+    p.wateringFrequencyDays
+      ? `- Frequência de rega habitual: a cada ${p.wateringFrequencyDays} dia(s)`
+      : null,
     `- Última rega: ${daysAgo(p.lastWatered)}`,
     `- Última adubação: ${daysAgo(p.lastFertilized)}`,
     p.status ? `- Status atual: ${p.status}` : null,
@@ -73,8 +115,9 @@ export const Route = createFileRoute("/api/chat")({
         const gateway = createLovableAiGatewayProvider(key);
         const model = gateway("google/gemini-3.6-flash");
 
-        const contextBlock = buildContextBlock(context);
-        const system = contextBlock ? `${SYSTEM_PROMPT}\n\n${contextBlock}` : SYSTEM_PROMPT;
+        const system = [SYSTEM_PROMPT, buildUserBlock(context?.user), buildContextBlock(context)]
+          .filter(Boolean)
+          .join("\n\n");
 
         const result = streamText({
           model,
