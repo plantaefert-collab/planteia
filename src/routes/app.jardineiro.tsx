@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { chatSuggestions, mockPlants, mockDiagnosesByPlant } from "@/lib/mock-data";
 import { ImagePlus, Send, Sprout, Loader2, X } from "lucide-react";
 import { processImageForAi } from "@/lib/image-processing";
+import { useProfile } from "@/lib/use-profile";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/jardineiro")({
@@ -28,6 +29,14 @@ function Chat() {
     plantIdRef.current = plantId;
   }, [plantId]);
 
+  // Perfil do usuário (nome, nível, cidade, objetivo) enviado à IA para
+  // personalizar o tratamento e a profundidade da resposta.
+  const { profile } = useProfile();
+  const profileRef = useRef(profile);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
   const activePlant = useMemo(
     () => mockPlants.find((p) => p.id === plantId) ?? mockPlants[0],
     [plantId],
@@ -40,33 +49,45 @@ function Chat() {
         prepareSendMessagesRequest: ({ messages, body }) => {
           const plant = mockPlants.find((p) => p.id === plantIdRef.current);
           const diag = plant ? mockDiagnosesByPlant[plant.id] : undefined;
+          const perfil = profileRef.current;
+          const user = perfil
+            ? {
+                name: perfil.name,
+                level: perfil.level,
+                city: perfil.city,
+                goal: perfil.goal,
+              }
+            : undefined;
           return {
             body: {
               ...body,
               messages,
-              context: plant
-                ? {
-                    plant: {
-                      nickname: plant.nickname,
-                      species: plant.species,
-                      scientific: plant.scientific,
-                      environment: plant.environment,
-                      light: plant.light,
-                      potSize: plant.potSize,
-                      wateringFrequencyDays: plant.wateringFrequencyDays,
-                      lastWatered: plant.lastWatered,
-                      lastFertilized: plant.lastFertilized,
-                      status: plant.status,
-                    },
-                    lastDiagnosis: diag
-                      ? {
-                          mainSuspicion: diag.mainSuspicion,
-                          status: diag.status,
-                          createdAt: diag.createdAt,
-                        }
-                      : null,
-                  }
-                : undefined,
+              context: {
+                user,
+                ...(plant
+                  ? {
+                      plant: {
+                        nickname: plant.nickname,
+                        species: plant.species,
+                        scientific: plant.scientific,
+                        environment: plant.environment,
+                        light: plant.light,
+                        potSize: plant.potSize,
+                        wateringFrequencyDays: plant.wateringFrequencyDays,
+                        lastWatered: plant.lastWatered,
+                        lastFertilized: plant.lastFertilized,
+                        status: plant.status,
+                      },
+                      lastDiagnosis: diag
+                        ? {
+                            mainSuspicion: diag.mainSuspicion,
+                            status: diag.status,
+                            createdAt: diag.createdAt,
+                          }
+                        : null,
+                    }
+                  : {}),
+              },
             },
           };
         },
@@ -108,9 +129,7 @@ function Chat() {
     setAttachment(null);
     await sendMessage({
       text: trimmed || "Segue a foto da minha planta. O que você observa?",
-      ...(img
-        ? { files: [{ type: "file" as const, mediaType: "image/jpeg", url: img }] }
-        : {}),
+      ...(img ? { files: [{ type: "file" as const, mediaType: "image/jpeg", url: img }] } : {}),
     });
   };
 
@@ -141,15 +160,13 @@ function Chat() {
         <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto pb-4">
           {messages.length === 0 && (
             <div className="rounded-2xl border border-border bg-card p-4 text-sm text-foreground/90">
-              Olá! Sou o <strong>Jardineiro IA</strong>. Me conte um sintoma,
-              descreva a rotina de cuidado ou peça orientação sobre sua planta.
+              Olá! Sou o <strong>Jardineiro IA</strong>. Me conte um sintoma, descreva a rotina de
+              cuidado ou peça orientação sobre sua planta.
             </div>
           )}
 
           {messages.map((m) => {
-            const text = m.parts
-              .map((p) => (p.type === "text" ? p.text : ""))
-              .join("");
+            const text = m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
             const images = m.parts.filter(
               (p: any) =>
                 p.type === "file" &&
@@ -158,10 +175,7 @@ function Chat() {
             ) as any[];
             const isUser = m.role === "user";
             return (
-              <div
-                key={m.id}
-                className={isUser ? "flex justify-end" : "flex justify-start"}
-              >
+              <div key={m.id} className={isUser ? "flex justify-end" : "flex justify-start"}>
                 <div
                   className={`max-w-[85%] space-y-2 overflow-hidden rounded-2xl px-3.5 py-2.5 text-sm ${
                     isUser
@@ -185,8 +199,7 @@ function Chat() {
 
           {isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              O Jardineiro está pensando…
+              <Loader2 className="h-4 w-4 animate-spin" />O Jardineiro está pensando…
             </div>
           )}
 
