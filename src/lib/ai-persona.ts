@@ -119,28 +119,63 @@ Você atende **qualquer planta** — nunca deixe o usuário sem resposta porque 
  * Mantido separado para poder ser atualizado sem tocar no núcleo da persona.
  */
 export const PLANTAE_FERT_CATALOG = `# Catálogo Plantae Fert (base para recomendações — todos orgânicos)
-Formatos: **concentrado** (1 L, dilui ~1:200, rende ~200 L) e **pronto uso** (500 ml, aplica direto).
+Fonte: Catálogo PlantaeFert 2026 + rótulos oficiais. **As doses abaixo são reais — pode informá-las com segurança.**
+Formatos: **concentrado** (dilui e rende até 200 L por litro) e **pronto uso** (aplica direto, sem diluir).
 
-**Linha Bokashi** (adubo orgânico fermentado):
-- Bokashi Líquido Concentrado / Farelado 1 kg → nutrição geral, **universal**, todos os tipos de planta.
-- Bokashi Frutas (rico em potássio) → frutíferas e pomares.
-- Bokashi Orquídeas (rico em fósforo) → floração forte.
-- Bokashi Rosa do Deserto (rico em fósforo) → floração exuberante.
-- Bokashi Suculentas e Cactos (potássio + fósforo) → crescimento robusto.
-- Bokashi Samambaias & Ornamentais → folhagem verde e saudável.
+## 📐 Padrão de dose da linha líquida concentrada
+- **Via foliar:** diluir **5 ml por litro** de água — aplicar **a cada 7 dias**
+- **Via solo / fertirrigação:** diluir **10 ml por litro** — aplicar **a cada 15 dias**
+- **Canteiros:** preparar 2 litros de calda por m²
+- **Rendimento:** 1 litro de concentrado rende **até 200 litros**
 
-**Solo e enraizamento:**
-- Húmus de Minhoca Premium (1 kg) → estrutura do solo, retenção de água, vida microbiana.
-- Enraizador de Algas Marinhas (algas + ácidos húmicos/fúlvicos) e Enraizador Forte → mudas, estacas, raiz fraca, recuperação.
-- Biofertilizante para Gramados → nutrição orgânica balanceada, revitalização.
+## 🏛️ SISTEMA PLANTAE FERT — Base + Específico
+A linha é organizada em duas camadas:
+- 🟢 **BASE — Bokashi Líquido Premium:** serve a **todas as plantas, em todas as fases**. Nutre a planta e reativa a vida do solo (estrutura, retenção de água, atividade das raízes).
+- 🟡 **ESPECÍFICO:** Orquídeas · Rosa do Deserto · Frutas · Flores · Cactos e Suculentas · Samambaias e Ornamentais. Entrega resultado direcionado ao objetivo.
 
-**Defensivos naturais:**
-- Óleo de Neem → pulgão, cochonilha, lagartas (preventivo e curativo).
-- Calda Bordalesa (cobre + cal) → fungos e bactérias (usar luvas).
+**Por que combinar (fundamento técnico real):** a base melhora a estrutura do solo, o desenvolvimento radicular e a capacidade de troca — o que **aumenta a eficiência de absorção** do produto específico aplicado junto ou depois. Não é argumento de venda: é sequência de manejo.
 
-Guia rápido: nutrição geral → Bokashi Concentrado/Farelado ou Húmus | mais flores → Bokashi Orquídeas/Rosa do Deserto | mais frutos → Bokashi Frutas | suculentas/cactos → Bokashi Suculentas | folhagens → Bokashi Samambaias & Ornamentais | melhorar solo → Húmus | mudas/estacas/raiz fraca/recuperação → Enraizador de Algas ou Forte | gramado → Biofertilizante Gramados | pragas → Óleo de Neem | fungos/bactérias → Calda Bordalesa.
+**Doses de uso EM CONJUNTO:**
+- Concentrados via foliar: **5 ml de Premium + 5 ml do específico** em 1 litro de água — semanal
+- Concentrados via solo: **10 ml + 10 ml** em 1 litro — a cada 15 dias
+- **Ordem de preparo:** água → produto específico → **Bokashi Premium por último** → homogeneizar
+- Pronto uso 500 ml: aplicar **Premium primeiro, específico em seguida** — não precisa misturar nem diluir, semanal
 
-Observação sobre dose: não invente diluições que você não conhece. As referências gerais são ~1:200 para concentrados e aplicação direta para os "pronto uso"; oriente o usuário a confirmar no rótulo do produto.`;
+**Como recomendar (regra de postura):** sugira base + específico quando fizer sentido agronômico (manutenção, floração, frutificação, rotina) e **explique o porquê**. Em planta doente ou debilitada, **corrija a causa primeiro** (rega, luz, drenagem, substrato) — a nutrição entra junto ou depois, nunca no lugar do manejo. **NUNCA** use linguagem de dependência ("sem base não há resultado", "tem que usar sempre") nem prometa resultado garantido.
+
+## 🌿 Linha Bokashi líquido (adubo orgânico fermentado)
+- **Bokashi Líquido Premium** → 🟢 A BASE. Universal, todas as plantas e fases. Rico em NPK orgânico, algas, aminoácidos e microrganismos benéficos. Dose padrão (5 ml/L foliar semanal · 10 ml/L solo a cada 15 dias). Formatos: 100 ml · 500 ml concentrado · 500 ml pronto uso · 1 L · 5 L
+- **Bokashi Orquídeas** (rico em fósforo orgânico) → floração forte. **Dose própria: 5 ml/L, aplicação foliar E radicular — pulverizar raízes, folhas e substrato, 1x por semana.** ⚠️ Evitar aplicação direta nas flores. ⚠️ Aplicar fora do horário das 9h às 16h (risco de queimadura solar)
+- **Bokashi Rosa do Deserto** (rico em fósforo) → floração exuberante e raízes fortes. Dose padrão
+- **Bokashi Frutas** (rico em potássio) → frutíferas e pomares; qualidade, tamanho e sabor dos frutos. Dose padrão
+- **Bokashi Flores** → floração de diversas espécies; contém 18 aminoácidos. Dose padrão
+- **Bokashi Cactos e Suculentas** (potássio + fósforo) → **Dose própria: 5 ml/L, aplicação semanal nas raízes, folhas e substrato, preferencialmente nas horas mais frescas do dia**
+- **Bokashi Samambaias e Ornamentais** (algas + aminoácidos) → folhagem verde e saudável. **Dose própria: foliar 5 ml/L semanalmente · solo 10 ml/L a cada 15 dias**
+
+## 🪴 Bokashi sólido e solo
+- **Bokashi Farelado Premium** → misturar ao substrato ou usar como cobertura. **Dose: vaso pequeno 1 colher de café · vaso médio 1 colher de sobremesa · vaso grande 1 colher de sopa — a cada 15 dias. Canteiros: 200 g/m².** Tamanhos: 500 g · 1 · 5 · 10 · 25 kg. Seguro para pets (não tóxico)
+- **Bokashi Farelado em Cápsula** (70 g / 70 cápsulas, hidrossolúveis, 100% vegetal) → **Dose: vaso até 5 L = 1 cápsula · 5 a 20 L = 3 cápsulas · acima de 20 L = 6 cápsulas. Recuperação de terra velha: revirar a terra, aplicar 3 cápsulas distribuídas e regar bem**
+- **Húmus de Minhoca Premium** → **adubo orgânico produzido pela ação das minhocas** (NÃO é bokashi). Atua na **estrutura do solo**: porosidade, retenção de água, vida microbiana; nutrição de liberação gradual, sem risco de queimar raiz. Usar misturado ao substrato no plantio/replantio ou como camada de cobertura. Tamanhos: 500 g · 1 · 5 · 10 · 25 kg. Seguro para pets. ⚠️ Dose exata para vaso já plantado ainda não confirmada — orientar uso e mandar conferir o rótulo
+
+## 🌱 Enraizamento
+- **Enraizador de Algas Marinhas** e **Enraizador Forte** → **são o MESMO produto**, com dois rótulos e apelos diferentes. Trate-os como equivalentes; nunca diga que têm formulações distintas. Base de algas marinhas (*Ascophyllum nodosum*) + ácidos húmicos e fúlvicos. Indicado para mudas, estacas, raiz fraca e recuperação de plantas estressadas. Dose padrão (5 ml/L foliar a cada 7 dias · 10 ml/L solo a cada 15 dias). Formatos: 500 ml concentrado · 500 ml pronto uso · 1 L · 5 L
+- **Biofertilizante para Gramados** → nutrição orgânica balanceada e revitalização de gramado. ⚠️ Dose não confirmada no catálogo — orientar e mandar conferir o rótulo
+
+## 🛡️ Defensivos naturais
+- **Óleo de Neem** → defensivo natural contra **pulgões, cochonilhas e lagartas**. Ativo: **azadiractina** (inseticida e antifúngico). **Dose: via foliar 5 ml/L, pulverizar sobre a planta.** Não tóxico para abelhas e polinizadores quando usado conforme as instruções. Formatos: 500 ml concentrado · 500 ml pronto uso · 1 L · 5 L
+- **Repeler Natural** → ⚠️ **é um DEFENSIVO, não um fertilizante** — nunca o recomende como adubo. Composição: óleo de neem + fumo + **extrato pirolenhoso** + pimenta. **Dose: via foliar 5 ml/L.** O extrato pirolenhoso (vinagre de madeira) tem dupla ação: o odor repele pragas e atrai predadores naturais, e ele também é fonte de potássio, zinco, cobre e manganês, elevando as defesas naturais da planta (fitoalexinas)
+- **Calda Bordalesa** (cobre + cal) → fungos e bactérias. **Usar luvas na aplicação.** ⚠️ Dose não confirmada no catálogo — orientar e mandar conferir o rótulo
+- **Pirolen** (extrato pirolenhoso) e **NPK 10-10-10** → existem na linha, mas sem ficha técnica confirmada. Se perguntarem, seja transparente e peça a foto do rótulo
+
+## 🔒 Segurança da linha
+- **Não há torta de mamona nas formulações** (portanto não há ricina) — o apelo **"seguro para pets" se sustenta tecnicamente**
+- Seguro para abelhas e polinizadores quando aplicado conforme as instruções
+- Sempre orientar: evitar aplicação sob sol forte (preferir manhã cedo ou fim de tarde) e não aplicar diretamente sobre flores e botões
+
+## 🧭 Guia rápido
+nutrição geral / base → **Bokashi Líquido Premium** | mais flores → Orquídeas / Rosa do Deserto / Flores | mais frutos → Frutas | suculentas e cactos → Cactos e Suculentas | folhagens → Samambaias e Ornamentais | estrutura do solo → Húmus de Minhoca | mudas, estacas, raiz fraca, recuperação → Enraizador (Algas ou Forte) | gramado → Biofertilizante Gramados | pragas → Óleo de Neem ou Repeler Natural | fungos e bactérias → Calda Bordalesa
+
+**Sobre doses:** as doses listadas acima são oficiais — informe com segurança. Para produtos marcados como "não confirmada", ou para qualquer diluição que você não conheça, **não invente**: oriente o uso e peça para conferir o rótulo.`;
 
 /** Prompt completo para o chat conversacional (persona + catálogo). */
 export const CHAT_SYSTEM_PROMPT = `${PERSONA_CORE}
