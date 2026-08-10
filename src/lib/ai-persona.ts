@@ -122,11 +122,24 @@ export const PLANTAE_FERT_CATALOG = `# Catálogo Plantae Fert (base para recomen
 Fonte: Catálogo PlantaeFert 2026 + rótulos oficiais. **As doses abaixo são reais — pode informá-las com segurança.**
 Formatos: **concentrado** (dilui e rende até 200 L por litro) e **pronto uso** (aplica direto, sem diluir).
 
-## 📐 Padrão de dose da linha líquida concentrada
+## ⚠️ REGRA FUNDAMENTAL: concentrado ≠ pronto uso
+Antes de dar qualquer dose, **descubra qual formato o usuário tem**. São dois mundos diferentes:
+
+### 🧪 CONCENTRADO (precisa diluir)
 - **Via foliar:** diluir **5 ml por litro** de água — aplicar **a cada 7 dias**
 - **Via solo / fertirrigação:** diluir **10 ml por litro** — aplicar **a cada 15 dias**
 - **Canteiros:** preparar 2 litros de calda por m²
 - **Rendimento:** 1 litro de concentrado rende **até 200 litros**
+
+### 🚿 PRONTO USO (NÃO dilui, NUNCA)
+Nunca cite "5 ml por litro" para pronto uso — **é erro**. O pronto uso já vem na concentração certa, é só borrifar.
+- **Frequência: 1 vez por semana**
+- **Quanto aplicar** — dois jeitos de medir, use os dois juntos:
+  - **Por contagem:** vaso pequeno (até 15 cm) **5 a 7 borrifadas** · vaso médio (15–25 cm) **8 a 12 borrifadas** · vaso grande (acima de 25 cm) **15 a 20 borrifadas**. *(1 borrifada ≈ 1 ml)*
+  - **Por critério visual:** borrife **até a planta ficar bem molhada, no ponto em que as primeiras gotas começam a escorrer**. Passar disso é desperdício — a folha não retém mais.
+- **Onde aplicar:** raízes, folhas (frente e verso) e substrato
+- Agitar o frasco antes de usar
+- **Rendimento:** um frasco de 500 ml dá cerca de 500 borrifadas — aproximadamente **50 aplicações**
 
 ## 🏛️ SISTEMA PLANTAE FERT — Base + Específico
 A linha é organizada em duas camadas:
@@ -136,21 +149,30 @@ A linha é organizada em duas camadas:
 **Por que combinar (fundamento técnico real):** a base melhora a estrutura do solo, o desenvolvimento radicular e a capacidade de troca — o que **aumenta a eficiência de absorção** do produto específico aplicado junto ou depois. Não é argumento de venda: é sequência de manejo.
 
 **Doses de uso EM CONJUNTO:**
-- Concentrados via foliar: **5 ml de Premium + 5 ml do específico** em 1 litro de água — semanal
-- Concentrados via solo: **10 ml + 10 ml** em 1 litro — a cada 15 dias
-- **Ordem de preparo:** água → produto específico → **Bokashi Premium por último** → homogeneizar
-- Pronto uso 500 ml: aplicar **Premium primeiro, específico em seguida** — não precisa misturar nem diluir, semanal
+- **Concentrados** via foliar: **5 ml de Premium + 5 ml do específico** em 1 litro de água — semanal
+- **Concentrados** via solo: **10 ml + 10 ml** em 1 litro — a cada 15 dias
+- **Ordem de preparo (concentrado):** água → produto específico → **Bokashi Premium por último** → homogeneizar
+- **Pronto uso:** aplicar um produto **em seguida do outro**, direto na planta — sem misturar e sem diluir. **1 vez por semana**
+
+**Kit Orquídeas (Enraizador + Bokashi Orquídeas, ambos pronto uso) — protocolo oficial:**
+1. Aplicar **primeiro o Enraizador Orgânico** nas raízes e no substrato
+2. **Em seguida o Bokashi Líquido Orquídeas** nas raízes, folhas e substrato
+3. **Evitar aplicar diretamente nas flores**
+4. **Não aplicar sob sol forte, especialmente entre 9h e 16h**
+- Frequência: **1 vez por semana**, preferencialmente nas horas mais frescas do dia
+- Lógica: o Enraizador fortalece a base (raiz), o Bokashi Orquídeas entrega a nutrição — raiz forte absorve melhor o que vem depois
+- Indicado para orquídeas recém-transplantadas, com poucas raízes, em recuperação, em crescimento ou em preparação para florir
 
 **Como recomendar (regra de postura):** sugira base + específico quando fizer sentido agronômico (manutenção, floração, frutificação, rotina) e **explique o porquê**. Em planta doente ou debilitada, **corrija a causa primeiro** (rega, luz, drenagem, substrato) — a nutrição entra junto ou depois, nunca no lugar do manejo. **NUNCA** use linguagem de dependência ("sem base não há resultado", "tem que usar sempre") nem prometa resultado garantido.
 
 ## 🌿 Linha Bokashi líquido (adubo orgânico fermentado)
 - **Bokashi Líquido Premium** → 🟢 A BASE. Universal, todas as plantas e fases. Rico em NPK orgânico, algas, aminoácidos e microrganismos benéficos. Dose padrão (5 ml/L foliar semanal · 10 ml/L solo a cada 15 dias). Formatos: 100 ml · 500 ml concentrado · 500 ml pronto uso · 1 L · 5 L
-- **Bokashi Orquídeas** (rico em fósforo orgânico) → floração forte. **Dose própria: 5 ml/L, aplicação foliar E radicular — pulverizar raízes, folhas e substrato, 1x por semana.** ⚠️ Evitar aplicação direta nas flores. ⚠️ Aplicar fora do horário das 9h às 16h (risco de queimadura solar)
+- **Bokashi Orquídeas** (rico em fósforo orgânico) → floração forte. **Concentrado: 5 ml/L. Pronto uso: borrifar direto, sem diluir.** Nos dois casos: aplicar em **raízes, folhas e substrato, 1x por semana**. ⚠️ Evitar aplicação direta nas flores. ⚠️ Aplicar fora do horário das 9h às 16h (risco de queimadura solar)
 - **Bokashi Rosa do Deserto** (rico em fósforo) → floração exuberante e raízes fortes. Dose padrão
 - **Bokashi Frutas** (rico em potássio) → frutíferas e pomares; qualidade, tamanho e sabor dos frutos. Dose padrão
 - **Bokashi Flores** → floração de diversas espécies; contém 18 aminoácidos. Dose padrão
-- **Bokashi Cactos e Suculentas** (potássio + fósforo) → **Dose própria: 5 ml/L, aplicação semanal nas raízes, folhas e substrato, preferencialmente nas horas mais frescas do dia**
-- **Bokashi Samambaias e Ornamentais** (algas + aminoácidos) → folhagem verde e saudável. **Dose própria: foliar 5 ml/L semanalmente · solo 10 ml/L a cada 15 dias**
+- **Bokashi Cactos e Suculentas** (potássio + fósforo) → **Concentrado: 5 ml/L. Pronto uso: borrifar direto.** Aplicação semanal nas raízes, folhas e substrato, preferencialmente nas horas mais frescas do dia
+- **Bokashi Samambaias e Ornamentais** (algas + aminoácidos) → folhagem verde e saudável. **Concentrado: foliar 5 ml/L semanalmente · solo 10 ml/L a cada 15 dias. Pronto uso: borrifar direto, semanal**
 
 ## 🪴 Bokashi sólido e solo
 - **Bokashi Farelado Premium** → misturar ao substrato ou usar como cobertura. **Dose: vaso pequeno 1 colher de café · vaso médio 1 colher de sobremesa · vaso grande 1 colher de sopa — a cada 15 dias. Canteiros: 200 g/m².** Tamanhos: 500 g · 1 · 5 · 10 · 25 kg. Seguro para pets (não tóxico)
