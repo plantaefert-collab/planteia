@@ -7,6 +7,7 @@ import { diagnosisService, plantsService, carePlanService } from "@/lib/services
 import { DiagnosisResult } from "@/components/DiagnosisResult";
 import type { Diagnosis, Plant, CarePlan } from "@/lib/types";
 import { diagnosisHistory, type PhotoDiagnosisHistoryEntry } from "@/lib/diagnosis-history";
+import type { AnalysisStepId } from "@/lib/diagnosis-stream";
 import { pendingCapture } from "@/lib/pending-capture";
 import { 
   Sparkles, 
@@ -28,7 +29,7 @@ import {
 import { toast } from "sonner";
 
 // Diagnosis components
-import { DiagnosisProgress } from "@/components/diagnosis/DiagnosisProgress";
+import { StepList } from "@/components/diagnosis/StepList";
 import { DiagnosisIntentSelector } from "@/components/diagnosis/DiagnosisIntentSelector";
 import { SymptomSelector, symptomsToText } from "@/components/diagnosis/SymptomSelector";
 import { GuidedPhotoUploader } from "@/components/diagnosis/GuidedPhotoUploader";
@@ -111,8 +112,10 @@ function DiagnosisPage() {
   const [result, setResult] = useState<Diagnosis | null>(null);
   const [isPlanAdded, setIsPlanAdded] = useState(false);
   const [addedPlan, setAddedPlan] = useState<CarePlan | null>(null);
-  const [analysisPhase, setAnalysisPhase] = useState<"upload" | "analyzing" | "finalizing" | "error">("upload");
-  const [analysisProgress, setAnalysisProgress] = useState(0);
+  // P-001 — sem fase estimada e sem percentual. O progresso é derivado dos campos
+  // que realmente chegaram do modelo; ver `src/lib/diagnosis-stream.ts`.
+  const [streamPartial, setStreamPartial] = useState<Partial<Diagnosis> | null>(null);
+  const [streamSteps, setStreamSteps] = useState<AnalysisStepId[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -191,61 +194,66 @@ function DiagnosisPage() {
 
     setStep("loading");
     setAnalysisError(null);
-    setAnalysisProgress(0);
-    setAnalysisPhase(_photos.length > 0 ? "upload" : "analyzing");
-
-    const started = Date.now();
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - started;
-      if (elapsed < 800 && _photos.length > 0) {
-        setAnalysisProgress((p) => Math.min(25, p + 5));
-      } else {
-        setAnalysisPhase((prev) => (prev === "upload" ? "analyzing" : prev));
-        setAnalysisProgress((p) => Math.min(90, p + 3));
-      }
-    }, 200);
+    setResult(null);
+    setStreamPartial(null);
+    setStreamSteps([]);
 
     try {
-      const r = await diagnosisService.analyze({
-        plantId: _plant?.id,
-        plantSpecies: _plant?.species,
-        objective: _objective,
-        symptom: _symptom,
-        photos: _photos,
-        answers: _answers,
-      });
-      clearInterval(timer);
-      setAnalysisPhase("finalizing");
-      setAnalysisProgress(100);
+      const r = await diagnosisService.analyzeStream(
+        {
+          plantId: _plant?.id,
+          plantSpecies: _plant?.species,
+          objective: _objective,
+          symptom: _symptom,
+          photos: _photos,
+          answers: _answers,
+        },
+        (partial, completed) => {
+          setStreamPartial(partial);
+          setStreamSteps(completed);
+
+          // P-002 — assim que existe uma hipótese, já há o que ler. Segurar o
+          // usuário na tela de análise até o fim seria voltar a esperar o objeto
+          // completo. Daqui em diante o próprio conteúdo aparecendo é o progresso,
+          // e a lista de passos deixa de ser necessária.
+          if (partial.mainSuspicion) setStep("result");
+        },
+      );
+
       setResult(r);
-      if (photos.length > 0) {
+      setStreamPartial(null);
+      setStep("result");
+
+      // Usa os valores efetivos da chamada, não os do estado: quando `analyze` é
+      // chamado com override (reexecução a partir do histórico) o estado ainda não
+      // foi atualizado, e o histórico gravava a entrada anterior.
+      if (_photos.length > 0) {
         try {
           diagnosisHistory.add({
-            plantId: selected?.id,
-            plantNickname: selected?.nickname,
-            plantSpecies: selected?.species,
-            symptom: symptomText,
-            objective,
-            answers,
-            photos,
+            plantId: _plant?.id,
+            plantNickname: _plant?.nickname,
+            plantSpecies: _plant?.species,
+            symptom: _symptom,
+            objective: _objective,
+            answers: _answers,
+            photos: _photos,
             diagnosis: r,
           });
           setHistory(diagnosisHistory.list());
         } catch { /* ignore storage errors */ }
       }
-      setTimeout(() => setStep("result"), 300);
     } catch (error) {
-      clearInterval(timer);
-      setAnalysisPhase("error");
-      const code = (error as { code?: string })?.code;
+      // P-005 — falha de modelo e schema já viraram diagnóstico conservador no
+      // serviço. Chegar aqui significa falha de rede de verdade, que é a única
+      // situação sem nenhum resultado para mostrar.
+      setStep("loading");
+      setStreamPartial(null);
       const friendly =
-        code === "schema_mismatch"
-          ? "A IA não conseguiu estruturar um diagnóstico confiável desta foto. Tente reenviar com uma imagem mais nítida, bem iluminada e focando a região afetada (folha, raiz ou pseudobulbo)."
-          : error instanceof Error
+        error instanceof Error && error.message
           ? error.message
-          : "Erro desconhecido";
+          : "Não conseguimos falar com o servidor de análise.";
       setAnalysisError(friendly);
-      toast.error("Não foi possível concluir a análise.");
+      toast.error("Sem conexão com a análise.");
     }
   };
 
@@ -347,9 +355,10 @@ function DiagnosisPage() {
         onError={() => setCameraPermissionDenied(true)}
       />
 
+      {/* P-004 — o contador "Passo N de 6" saiu daqui de propósito. Anunciar o custo
+          total na porta é convite ao abandono, e o fluxo é adaptativo: o número de
+          etapas depende do que o usuário responde. */}
       <div className="mx-auto max-w-lg space-y-6 pb-20">
-        <DiagnosisProgress current={step} />
-
         {selected && step !== "select" && step !== "loading" && step !== "result" && (
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
             <img
@@ -712,67 +721,42 @@ function DiagnosisPage() {
         )}
 
         {step === "loading" && (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-border bg-card p-8 text-center shadow-sm py-12">
-            {analysisPhase === "error" ? (
-              <>
-                <div className="mb-6 grid h-20 w-20 place-items-center rounded-full bg-destructive/10 text-destructive">
-                  <AlertCircle className="h-10 w-10" />
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            {analysisError ? (
+              /* Erro de rede é a única falha que não deixa resultado parcial — falha
+                 de modelo e de schema já viraram diagnóstico conservador no serviço.
+                 Por isso a mensagem nomeia a conexão, não a análise. Ver P-005. */
+              <div className="flex flex-col items-center py-6 text-center">
+                <div className="mb-5 grid h-16 w-16 place-items-center rounded-full bg-destructive/10 text-destructive">
+                  <AlertCircle className="h-8 w-8" />
                 </div>
-                <h3 className="font-display text-2xl font-semibold text-foreground">
-                  Falha na análise
+                <h3 className="font-display text-xl font-semibold text-foreground">
+                  Não consegui falar com a análise
                 </h3>
-                <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
-                  {analysisError ?? "Não foi possível concluir. Verifique a conexão e tente novamente."}
+                <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                  {analysisError} Suas fotos e respostas continuam salvas.
                 </p>
-                <div className="mt-6 flex flex-col gap-2 w-full max-w-xs">
+                <div className="mt-6 flex w-full max-w-xs flex-col gap-2">
                   <Button onClick={() => analyze()}>
-                    <RefreshCw className="h-4 w-4 mr-2" /> Tentar novamente
+                    <RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente
                   </Button>
                   <Button variant="ghost" onClick={() => setStep("review")}>
                     Voltar à revisão
                   </Button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="relative mb-6">
-                  <div className="h-20 w-20 rounded-full border-4 border-leaf/10 border-t-leaf animate-spin" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-leaf" />
-                  </div>
-                </div>
-                <h3 className="font-display text-2xl font-semibold text-foreground">
-                  {analysisPhase === "upload"
-                    ? "Enviando fotos…"
-                    : analysisPhase === "analyzing"
-                    ? "Analisando sua planta…"
-                    : "Finalizando diagnóstico…"}
-                </h3>
-                <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
-                  {analysisPhase === "upload"
-                    ? "Preparando as imagens para a IA."
-                    : analysisPhase === "analyzing"
-                    ? "A IA está cruzando sinais visuais, sintomas e respostas."
-                    : "Organizando hipóteses e plano de cuidados."}
-                </p>
-
-                <div className="mt-6 w-full max-w-xs">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-leaf transition-all duration-300 ease-out"
-                      style={{ width: `${analysisProgress}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground tabular-nums">
-                    {analysisProgress}%
-                  </p>
-                </div>
-              </>
+              <StepList
+                completed={streamSteps}
+                photoCount={photoCount}
+                species={selected?.species}
+                partial={streamPartial}
+              />
             )}
           </div>
         )}
 
-        {step === "result" && result && (
+        {step === "result" && (result || streamPartial) && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {isPlanAdded ? (
               <div className="rounded-3xl border border-success/20 bg-success-soft/30 p-6 text-center shadow-sm">
@@ -796,24 +780,34 @@ function DiagnosisPage() {
               </div>
             ) : (
               <>
-                <DiagnosisResult d={result} />
+                <DiagnosisResult
+                  d={result ?? streamPartial ?? {}}
+                  streaming={!result}
+                  onRetry={() => analyze()}
+                />
 
-                <DiagnosisFeedback diagnosisId={result.id} />
+                {/* Ações e avaliação só depois que o diagnóstico assentou: não dá
+                    para salvar no plano nem avaliar um resultado que ainda está
+                    sendo escrito. Elas entram com M-001, junto do último bloco. */}
+                {result && (
+                  <>
+                    <DiagnosisFeedback diagnosisId={result.id} />
 
-                
-                <div className="flex flex-col gap-3 pb-4">
-                  <Button size="lg" className="w-full shadow-lg shadow-leaf/20" onClick={addToPlan}>
-                    <Plus className="h-5 w-5 mr-2" /> Adicionar ao plano da planta
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="w-full">
-                    <Link to="/app/jardineiro">
-                      <MessageCircle className="h-5 w-5 mr-2" /> Conversar com Jardineiro IA
-                    </Link>
-                  </Button>
-                  <Button variant="ghost" onClick={() => setStep("intro")} className="text-muted-foreground">
-                    Refazer diagnóstico
-                  </Button>
-                </div>
+                    <div className="motion-stream-in flex flex-col gap-3 pb-4">
+                      <Button size="lg" className="w-full shadow-lg shadow-leaf/20" onClick={addToPlan}>
+                        <Plus className="h-5 w-5 mr-2" /> Adicionar ao plano da planta
+                      </Button>
+                      <Button asChild variant="outline" size="lg" className="w-full">
+                        <Link to="/app/jardineiro">
+                          <MessageCircle className="h-5 w-5 mr-2" /> Conversar com Jardineiro IA
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" onClick={() => setStep("intro")} className="text-muted-foreground">
+                        Refazer diagnóstico
+                      </Button>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>

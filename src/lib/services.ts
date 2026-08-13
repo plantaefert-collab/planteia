@@ -1,6 +1,11 @@
 import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from "./types";
 import * as mockData from "./mock-data";
 import {
+  consumeDiagnosisStream,
+  completedSteps,
+  type AnalysisStepId,
+} from "./diagnosis-stream";
+import {
   mockPlants,
   mockCareTasks,
   mockTimeline,
@@ -112,7 +117,16 @@ export const diagnosisService = {
       id: crypto.randomUUID(),
       plantId: input.plantId,
       createdAt: new Date().toISOString(),
-      status: scenario.priority === "acao_prioritaria" || scenario.priority === "atencao" ? "atencao" : "saudavel",
+      // P-003 — severidade é eixo separado da hipótese, então precisa estar certa.
+      // O mapa anterior jogava tudo que não fosse ação prioritária em "saudavel", o
+      // que rotulava "Investigação necessária" como planta saudável. Passava
+      // despercebido quando o status não aparecia em destaque; agora aparece.
+      status:
+        scenario.priority === "acao_prioritaria" || scenario.priority === "atencao"
+          ? "atencao"
+          : scenario.priority === "investigacao_necessaria" || scenario.priority === "observacao"
+            ? "acompanhamento"
+            : "saudavel",
       mainSuspicion: scenario.title,
       confidence: scenario.confidence,
       observedSigns: scenario.why,
@@ -126,6 +140,82 @@ export const diagnosisService = {
       reevaluateInDays: 7,
     };
   },
+
+  /**
+   * Versão em fluxo de `analyze`. Implementa P-001 e P-002.
+   *
+   * Chama `onPartial` a cada pedaço com o diagnóstico montado até ali e os passos
+   * já concluídos, para que a interface revele o conteúdo enquanto ele é gerado.
+   *
+   * `analyze` continua existindo para chamadas sem interface esperando — reexecução
+   * a partir do histórico, testes — onde streaming só adicionaria complexidade.
+   */
+  async analyzeStream(
+    input: {
+      plantId?: string;
+      plantSpecies?: string;
+      objective?: string;
+      symptom?: string;
+      photos?: string[];
+      answers?: Record<string, unknown>;
+    },
+    onPartial: (partial: Partial<Diagnosis>, completed: AnalysisStepId[]) => void,
+  ): Promise<Diagnosis> {
+    const photos = (input.photos ?? []).filter((p) => p.startsWith("data:image/"));
+
+    // Sem foto não há nada a transmitir: o cenário simulado por sintoma responde de
+    // uma vez só. Delego para `analyze` em vez de duplicar os cenários aqui.
+    if (photos.length === 0) {
+      const result = await this.analyze(input);
+      onPartial(result, completedSteps(result, true));
+      return result;
+    }
+
+    const res = await fetch("/api/diagnose-photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        photos,
+        symptom: input.symptom,
+        objective: input.objective,
+        answers: input.answers,
+        plantSpecies: input.plantSpecies,
+      }),
+    });
+
+    if (!res.ok) {
+      let code = "generation_failed";
+      let message = "Não foi possível concluir a análise.";
+      try {
+        const errBody = await res.json();
+        if (errBody?.error) code = errBody.error;
+        if (errBody?.message) message = errBody.message;
+      } catch {
+        try { message = await res.text(); } catch { /* ignore */ }
+      }
+      if (code === "schema_mismatch" || code === "generation_failed" || res.status === 422 || res.status >= 500) {
+        return buildLocalPhotoDiagnosis(input, code);
+      }
+
+      const error = new Error(message) as Error & { code?: string };
+      error.code = code;
+      throw error;
+    }
+
+    try {
+      const final = await consumeDiagnosisStream(res, onPartial);
+      return normalizePhotoDiagnosis(final, input);
+    } catch (err) {
+      // Conexão cortada antes do objeto final. O parcial já mostrado na tela não é
+      // confiável para salvar, então caímos no protocolo conservador local — mesma
+      // política do caminho não-streaming.
+      if (err instanceof Error && err.message === "stream_truncated") {
+        return buildLocalPhotoDiagnosis(input, "stream_truncated");
+      }
+      throw err;
+    }
+  },
+
   async getByPlant(plantId: string): Promise<Diagnosis | null> {
     await wait(80);
     return mockData.mockDiagnosesByPlant[plantId] ?? null;
@@ -247,6 +337,15 @@ function normalizePhotoDiagnosis(ai: Partial<Diagnosis>, input: { plantId?: stri
       typeof ai.reevaluateInDays === "number"
         ? Math.min(14, Math.max(3, Math.round(ai.reevaluateInDays)))
         : fallback.reevaluateInDays,
+    // Campos de D-001. Ficam `undefined` quando ausentes em vez de receberem um
+    // fallback inventado: um diferencial falso é pior que nenhum diferencial, e a
+    // interface já sabe se esconder quando não há dado. Ver P-003 e P-005.
+    differential:
+      Array.isArray(ai.differential) && ai.differential.length > 0 ? ai.differential : undefined,
+    contextUsed:
+      Array.isArray(ai.contextUsed) && ai.contextUsed.length > 0 ? ai.contextUsed : undefined,
+    missingFields:
+      Array.isArray(ai.missingFields) && ai.missingFields.length > 0 ? ai.missingFields : undefined,
   };
 }
 

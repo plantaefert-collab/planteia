@@ -1,17 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { DIAGNOSIS_SYSTEM_PROMPT } from "@/lib/ai-persona";
+// O separador entre o texto do modelo e o objeto final autoritativo mora em lib
+// para que cliente e servidor compartilhem a mesma definição - duplicar a
+// constante aqui seria a forma mais fácil de o protocolo divergir em silêncio.
+import { FINAL_SENTINEL } from "@/lib/diagnosis-stream";
 
 const SYSTEM_PROMPT = DIAGNOSIS_SYSTEM_PROMPT;
 
+const DifferentialSchema = z.object({
+  hypothesis: z.string(),
+  probability: z.number(),
+  ruledOutBy: z.string().optional(),
+});
+
+/**
+ * A ORDEM DOS CAMPOS É DECISÃO DE UX, NÃO DE ESTILO.
+ *
+ * O modelo gera na ordem em que os campos aparecem aqui e na instrução de JSON.
+ * Campos baratos de identificação vêm primeiro para que a lista de passos do
+ * P-001 avance com trabalho real: cada passo transiciona quando o campo
+ * correspondente termina de chegar, não por temporizador.
+ *
+ * Reordenar isto quebra a semântica dos passos em `StepList`.
+ */
 const DiagnosisSchema = z.object({
-  status: z.enum(["saudavel", "atencao", "acompanhamento"]),
+  // 1. o que se vê        → passo "Lendo os sinais na foto"
+  observedSigns: z.array(z.string()),
+  // 2. a conclusão        → passo "Formando a hipótese"
   mainSuspicion: z.string(),
   confidence: z.enum(["baixa", "moderada", "moderada-alta", "alta"]),
-  observedSigns: z.array(z.string()),
-  otherPossibilities: z.array(z.string()),
+  // 3. o que foi descartado → passo "Considerando alternativas"
+  differential: z.array(DifferentialSchema),
+  // 4. o plano             → passo "Montando o plano"
+  status: z.enum(["saudavel", "atencao", "acompanhamento"]),
   immediateActions: z.array(z.string()),
   avoid: z.array(z.string()),
   urgencySigns: z.array(z.string()),
@@ -19,9 +43,14 @@ const DiagnosisSchema = z.object({
   improvementSigns: z.array(z.string()),
   careTimeline: z.array(z.object({ when: z.string(), task: z.string() })),
   reevaluateInDays: z.number().int().min(3).max(14),
+  // derivado no servidor a partir de `differential`, para consumidores antigos
+  otherPossibilities: z.array(z.string()).optional(),
 });
 
-type DiagnosisPayload = z.infer<typeof DiagnosisSchema>;
+type DiagnosisPayload = z.infer<typeof DiagnosisSchema> & {
+  otherPossibilities: string[];
+  missingFields?: string[];
+};
 
 type Body = {
   photos?: string[];
@@ -32,19 +61,19 @@ type Body = {
 };
 
 const DEFAULT_DIAGNOSIS: DiagnosisPayload = {
-  status: "acompanhamento",
-  mainSuspicion: "Análise preliminar por foto",
-  confidence: "baixa",
   observedSigns: [
     "Foto recebida para análise visual",
     "Detalhes clínicos podem exigir novo enquadramento",
     "Contexto informado pelo usuário foi considerado",
   ],
-  otherPossibilities: [
-    "Estresse ambiental por luz, rega ou ventilação",
-    "Alteração natural de folhas antigas",
-    "Início de problema ainda pouco evidente na imagem",
+  mainSuspicion: "Análise preliminar por foto",
+  confidence: "baixa",
+  differential: [
+    { hypothesis: "Estresse ambiental por luz, rega ou ventilação", probability: 30 },
+    { hypothesis: "Alteração natural de folhas antigas", probability: 20 },
+    { hypothesis: "Início de problema ainda pouco evidente na imagem", probability: 15 },
   ],
+  status: "acompanhamento",
   immediateActions: [
     "Observe a região afetada sob luz natural indireta",
     "Verifique se o substrato está úmido antes de regar novamente",
@@ -76,6 +105,11 @@ const DEFAULT_DIAGNOSIS: DiagnosisPayload = {
     { when: "Em 7 dias", task: "Refazer foto no mesmo ângulo para comparação" },
   ],
   reevaluateInDays: 7,
+  otherPossibilities: [
+    "Estresse ambiental por luz, rega ou ventilação",
+    "Alteração natural de folhas antigas",
+    "Início de problema ainda pouco evidente na imagem",
+  ],
 };
 
 function clampReevaluationDays(value: number) {
@@ -90,13 +124,31 @@ function normalizeList(value: string[] | undefined, fallback: string[]) {
   return items.length > 0 ? items.slice(0, 6) : fallback;
 }
 
-function normalizeDiagnosis(value: DiagnosisPayload): DiagnosisPayload {
+function normalizeDifferential(
+  value: z.infer<typeof DifferentialSchema>[] | undefined,
+): DiagnosisPayload["differential"] {
+  const items = Array.isArray(value)
+    ? value
+        .filter((item) => item?.hypothesis?.trim())
+        .map((item) => ({
+          hypothesis: item.hypothesis.trim(),
+          probability: Math.min(95, Math.max(1, Math.round(item.probability ?? 10))),
+          ruledOutBy: item.ruledOutBy?.trim() || undefined,
+        }))
+        .sort((a, b) => b.probability - a.probability)
+        .slice(0, 4)
+    : [];
+  return items.length > 0 ? items : DEFAULT_DIAGNOSIS.differential;
+}
+
+function normalizeDiagnosis(value: z.infer<typeof DiagnosisSchema>): DiagnosisPayload {
+  const differential = normalizeDifferential(value.differential);
   return {
-    status: value.status ?? DEFAULT_DIAGNOSIS.status,
+    observedSigns: normalizeList(value.observedSigns, DEFAULT_DIAGNOSIS.observedSigns),
     mainSuspicion: value.mainSuspicion?.trim() || DEFAULT_DIAGNOSIS.mainSuspicion,
     confidence: value.confidence ?? DEFAULT_DIAGNOSIS.confidence,
-    observedSigns: normalizeList(value.observedSigns, DEFAULT_DIAGNOSIS.observedSigns),
-    otherPossibilities: normalizeList(value.otherPossibilities, DEFAULT_DIAGNOSIS.otherPossibilities),
+    differential,
+    status: value.status ?? DEFAULT_DIAGNOSIS.status,
     immediateActions: normalizeList(value.immediateActions, DEFAULT_DIAGNOSIS.immediateActions),
     avoid: normalizeList(value.avoid, DEFAULT_DIAGNOSIS.avoid),
     urgencySigns: normalizeList(value.urgencySigns, DEFAULT_DIAGNOSIS.urgencySigns),
@@ -109,10 +161,21 @@ function normalizeDiagnosis(value: DiagnosisPayload): DiagnosisPayload {
             .slice(0, 6)
         : DEFAULT_DIAGNOSIS.careTimeline,
     reevaluateInDays: clampReevaluationDays(value.reevaluateInDays),
+    // Derivado, não pedido ao modelo: menos campos para ele errar.
+    otherPossibilities: differential.map((d) => d.hypothesis),
   };
 }
 
-function buildFallbackDiagnosis(body: Body, reason: "model_error" | "schema_mismatch" | "no_photo"): DiagnosisPayload {
+/**
+ * P-005 — falha parcial nomeada. `missingFields` diz à interface exatamente o que
+ * não veio, para que ela possa mostrar "não consegui avaliar X" em vez de uma tela
+ * genérica de erro.
+ */
+function buildFallbackDiagnosis(
+  body: Body,
+  reason: "model_error" | "schema_mismatch" | "no_photo",
+  missingFields: string[] = [],
+): DiagnosisPayload {
   const symptomLabel = body.symptom?.replace(/_/g, " ").trim();
   const speciesLabel = body.plantSpecies?.trim();
   const suspicion = symptomLabel
@@ -132,19 +195,26 @@ function buildFallbackDiagnosis(body: Body, reason: "model_error" | "schema_mism
     ...DEFAULT_DIAGNOSIS,
     mainSuspicion: suspicion,
     observedSigns: [observedReason, ...DEFAULT_DIAGNOSIS.observedSigns.slice(0, 2)],
+    missingFields: missingFields.length > 0 ? missingFields : undefined,
   };
 }
 
-// Instrução explícita de saída JSON — substitui o "structured output" (generateObject),
-// que não é honrado pelo AI Gateway com este provider/modelo e fazia todo diagnóstico
-// cair no fallback genérico. Aqui o modelo devolve JSON como texto e nós parseamos.
-const JSON_INSTRUCTION = `Responda EXCLUSIVAMENTE com um objeto JSON válido — sem markdown, sem cercas de código, sem qualquer texto antes ou depois. Use exatamente estas chaves:
+// Instrução explícita de saída JSON — substitui o "structured output"
+// (generateObject/streamObject), que não é honrado pelo AI Gateway com este
+// provider/modelo e fazia todo diagnóstico cair no fallback genérico. Aqui o modelo
+// devolve JSON como texto, transmitido em fluxo, e nós parseamos — parcialmente no
+// cliente para renderização progressiva, e integralmente aqui para validar.
+//
+// A ORDEM DAS CHAVES espelha `DiagnosisSchema` de propósito. Ver o comentário lá.
+const JSON_INSTRUCTION = `Responda EXCLUSIVAMENTE com um objeto JSON válido — sem markdown, sem cercas de código, sem qualquer texto antes ou depois. Gere as chaves EXATAMENTE nesta ordem:
 {
-  "status": "saudavel" | "atencao" | "acompanhamento",
+  "observedSigns": ["sinais que você realmente vê NESTA foto"],
   "mainSuspicion": "hipótese principal específica desta planta",
   "confidence": "baixa" | "moderada" | "moderada-alta" | "alta",
-  "observedSigns": ["sinais que você realmente vê NESTA foto"],
-  "otherPossibilities": ["hipóteses alternativas"],
+  "differential": [
+    { "hypothesis": "hipótese alternativa", "probability": 25, "ruledOutBy": "por que ficou abaixo da principal" }
+  ],
+  "status": "saudavel" | "atencao" | "acompanhamento",
   "immediateActions": ["ações imediatas"],
   "avoid": ["o que evitar"],
   "urgencySigns": ["sinais de urgência"],
@@ -153,9 +223,15 @@ const JSON_INSTRUCTION = `Responda EXCLUSIVAMENTE com um objeto JSON válido —
   "careTimeline": [{ "when": "quando", "task": "tarefa" }],
   "reevaluateInDays": 7
 }
-Regras do JSON: cada lista com 3 a 6 itens curtos e acionáveis; "reevaluateInDays" é um inteiro entre 3 e 14. Baseie "observedSigns" e "mainSuspicion" no que é visível NESTA imagem específica — não repita respostas genéricas.`;
+Regras do JSON:
+- A ordem das chaves acima é obrigatória. A interface revela o resultado conforme cada chave chega.
+- Cada lista com 3 a 6 itens curtos e acionáveis.
+- "differential" traz 2 ou 3 alternativas reais que você considerou e descartou, com "probability" inteiro entre 1 e 95. Nunca repita a hipótese principal ali.
+- "reevaluateInDays" é um inteiro entre 3 e 14.
+- Baseie "observedSigns" e "mainSuspicion" no que é visível NESTA imagem específica — não repita respostas genéricas.
+- Se a foto não permitir avaliar algum aspecto (raiz, verso da folha, substrato), diga isso explicitamente em "observedSigns" em vez de inventar.`;
 
-// Extrai um objeto JSON de uma resposta em texto (tolera cercas de código e texto ao redor).
+/** Extrai um objeto JSON de uma resposta em texto (tolera cercas e texto ao redor). */
 function extractJson(text: string): unknown {
   if (!text) return null;
   let t = text.trim();
@@ -171,6 +247,13 @@ function extractJson(text: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** Resposta que é só o objeto final, sem texto do modelo antes. */
+function immediateFinal(diagnosis: DiagnosisPayload) {
+  return new Response(FINAL_SENTINEL + JSON.stringify(diagnosis), {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
 }
 
 export const Route = createFileRoute("/api/diagnose-photo")({
@@ -189,7 +272,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
           : [];
 
         if (photos.length === 0) {
-          return Response.json(buildFallbackDiagnosis(body, "no_photo"));
+          return immediateFinal(buildFallbackDiagnosis(body, "no_photo"));
         }
 
         const key = process.env.LOVABLE_API_KEY;
@@ -205,45 +288,72 @@ export const Route = createFileRoute("/api/diagnose-photo")({
           body.answers && Object.keys(body.answers).length
             ? `Respostas do usuário: ${JSON.stringify(body.answers)}`
             : null,
-          photos.length
-            ? `Foram enviadas ${photos.length} foto(s) para análise visual.`
-            : "Nenhuma foto foi enviada — a análise será preliminar.",
+          `Foram enviadas ${photos.length} foto(s) para análise visual.`,
         ]
           .filter(Boolean)
           .join("\n");
 
-        try {
-          const { text } = await generateText({
-            model,
-            system: SYSTEM_PROMPT,
-            temperature: 0.3,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: `${contextText}\n\n${JSON_INSTRUCTION}` },
-                  ...photos.map((url) => ({ type: "image" as const, image: url })),
+        const encoder = new TextEncoder();
+
+        const stream = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            let full = "";
+
+            const emitFinal = (diagnosis: DiagnosisPayload) => {
+              controller.enqueue(encoder.encode(FINAL_SENTINEL + JSON.stringify(diagnosis)));
+            };
+
+            try {
+              const result = streamText({
+                model,
+                system: SYSTEM_PROMPT,
+                temperature: 0.3,
+                messages: [
+                  {
+                    role: "user",
+                    content: [
+                      { type: "text", text: `${contextText}\n\n${JSON_INSTRUCTION}` },
+                      ...photos.map((url) => ({ type: "image" as const, image: url })),
+                    ],
+                  },
                 ],
-              },
-            ],
-          });
+              });
 
-          const result = DiagnosisSchema.safeParse(extractJson(text));
+              for await (const chunk of result.textStream) {
+                full += chunk;
+                controller.enqueue(encoder.encode(chunk));
+              }
 
-          if (!result.success) {
-            console.warn(
-              `[AI MONITOR] Resposta da IA fora do schema. Fotos: ${photos.length}. Campos: ${result.error.issues
-                .map((i) => i.path.join("."))
-                .join(", ")}`,
-            );
-            return Response.json(buildFallbackDiagnosis(body, "schema_mismatch"));
-          }
+              const parsed = DiagnosisSchema.safeParse(extractJson(full));
 
-          return Response.json(normalizeDiagnosis(result.data));
-        } catch (err) {
-          console.error("AI Diagnosis Error:", err);
-          return Response.json(buildFallbackDiagnosis(body, "model_error"));
-        }
+              if (!parsed.success) {
+                const missing = [...new Set(parsed.error.issues.map((i) => String(i.path[0] ?? "")))].filter(Boolean);
+                console.warn(
+                  `[AI MONITOR] Resposta da IA fora do schema. Fotos: ${photos.length}. Campos: ${missing.join(", ")}`,
+                );
+                emitFinal(buildFallbackDiagnosis(body, "schema_mismatch", missing));
+              } else {
+                emitFinal(normalizeDiagnosis(parsed.data));
+              }
+            } catch (err) {
+              console.error("AI Diagnosis Error:", err);
+              // Mesmo com texto já transmitido, o objeto final substitui o parcial no
+              // cliente — o usuário nunca fica com um diagnóstico pela metade.
+              emitFinal(buildFallbackDiagnosis(body, "model_error"));
+            } finally {
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-store",
+            // Impede buffering em proxies, que anularia o streaming.
+            "X-Accel-Buffering": "no",
+          },
+        });
       },
     },
   },

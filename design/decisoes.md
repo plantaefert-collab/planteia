@@ -99,6 +99,42 @@ O `schema_mismatch` tratado em [`.lovable/plan.md`](../.lovable/plan.md) tem rai
 de backend: foto ruim entra, modelo não estrutura a saída. O fallback implementado trata o
 sintoma corretamente e deve permanecer. A causa só é atacada na fase 2.
 
+### Adendo 1 — correção de mecanismo (2026-08-13, durante a implementação)
+
+**O que estava errado nesta decisão:** a tabela de fases dizia trocar `generateObject` por
+`streamObject`. Ao abrir o código, o comentário em
+[`api/diagnose-photo.ts`](../src/routes/api/diagnose-photo.ts) registrava que
+`generateObject` **já havia sido tentado e removido** — o structured output não é honrado
+pelo AI Gateway com `google/gemini-3.6-flash`, e fazia todo diagnóstico cair no fallback
+genérico. `streamObject` depende da mesma maquinaria e falharia igual.
+
+**Mecanismo adotado no lugar:** `streamText` + parser tolerante de JSON parcial no cliente
+([`partial-json.ts`](../src/lib/partial-json.ts)), com o protocolo em
+[`diagnosis-stream.ts`](../src/lib/diagnosis-stream.ts). Mantém intacto o que já funcionava
+— JSON instruído por prompt, parseado e validado no servidor — e troca apenas o transporte.
+
+**O que não mudou:** a direção aprovada. Streaming, revelação progressiva, diferencial e
+status honesto seguem exatamente como decidido. Só o meio mudou.
+
+**Consequência nova:** a ordem das chaves no schema virou decisão de UX, porque os passos de
+`P-001` derivam de qual campo acabou de chegar. Reordenar o schema sem reordenar
+`ANALYSIS_STEPS` quebra a semântica dos passos. Ambos têm comentário avisando disso.
+
+### Adendo 2 — dois defeitos encontrados ao testar (2026-08-13)
+
+Nenhum dos dois foi introduzido por esta decisão; ambos ficaram visíveis por causa dela.
+
+1. **`investigacao_necessaria` e `observacao` eram rotulados como planta saudável.** O mapa
+   de `priority` para `status` em `services.ts` jogava tudo que não fosse ação prioritária em
+   `saudavel`. Passava despercebido enquanto o status não aparecia em destaque; com o selo ao
+   lado da hipótese, a tela dizia "Investigação necessária · Saudável". Corrigido para
+   `acompanhamento`.
+2. **O caminho sem foto não mostrava alternativa nenhuma**, porque só o diagnóstico vindo da
+   API traz `differential` estruturado. Isso reintroduzia a hipótese única justamente onde a
+   confiança é mais baixa. `DifferentialList` passou a cair para `otherPossibilities`,
+   renderizadas sem barra — inventar probabilidade seria pior que não ter, mas omitir a
+   alternativa é pior ainda.
+
 ---
 
 ## D-002 · Contexto sem perguntar
