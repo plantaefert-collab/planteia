@@ -44,7 +44,7 @@ import { ptBR } from "date-fns/locale";
 import type { CareTask, Diagnosis, Plant, TimelineEntry } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute("/app/plantas/$id")({
+export const Route = createFileRoute("/app/plantas_/$id")({
   head: () => ({ meta: [{ title: `Planta · Plantae AI` }] }),
   component: PlantDetail,
   notFoundComponent: PlantNotFound,

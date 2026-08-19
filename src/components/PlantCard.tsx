@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Droplets, Stethoscope } from "lucide-react";
+import { ChevronRight, Droplets, Stethoscope, Sprout } from "lucide-react";
 import type { Plant } from "@/lib/types";
 import { StatusBadge } from "./StatusBadge";
 
@@ -15,12 +15,19 @@ export function PlantCard({ plant }: { plant: Plant }) {
         className="block cursor-pointer outline-none"
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          <img
-            src={plant.photo}
-            alt={plant.nickname}
-            loading="lazy"
-            className="h-full w-full object-cover transition group-hover:scale-105"
-          />
+          {plant.photo ? (
+            <img
+              src={plant.photo}
+              alt={plant.nickname}
+              loading="lazy"
+              className="h-full w-full object-cover transition group-hover:scale-105"
+            />
+          ) : (
+            // Planta cadastrada sem foto: mostra um marcador em vez de imagem quebrada.
+            <div className="grid h-full w-full place-items-center bg-leaf-soft/60 text-leaf">
+              <Sprout className="h-10 w-10 opacity-70" />
+            </div>
+          )}
           <div className="absolute left-3 top-3">
             <StatusBadge status={plant.status} />
           </div>

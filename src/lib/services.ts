@@ -1,5 +1,6 @@
 import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from "./types";
 import * as mockData from "./mock-data";
+import { plantsDb, tasksDb, timelineDb, usuarioAtual, type NovaPlanta } from "./plants-db";
 import {
   consumeDiagnosisStream,
   completedSteps,
@@ -21,23 +22,41 @@ import {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Logado -> dados reais do banco. Visitante -> dados de exemplo (demonstracao).
+async function logado(): Promise<boolean> {
+  return (await usuarioAtual()) !== null;
+}
+
 export const plantsService = {
   async list(): Promise<Plant[]> {
+    if (await logado()) return plantsDb.list();
     await wait(120);
     return mockPlants;
   },
   async get(id: string): Promise<Plant | undefined> {
+    if (await logado()) return plantsDb.get(id);
     await wait(80);
     return mockPlants.find((p) => p.id === id);
+  },
+  async create(input: NovaPlanta): Promise<Plant> {
+    return plantsDb.create(input);
+  },
+  async remove(id: string): Promise<void> {
+    return plantsDb.remove(id);
+  },
+  async uploadPhoto(dataUrl: string): Promise<string> {
+    return plantsDb.uploadPhoto(dataUrl);
   },
 };
 
 export const tasksService = {
   async list(): Promise<CareTask[]> {
+    if (await logado()) return tasksDb.list();
     await wait(80);
     return mockCareTasks;
   },
   async listByPlant(plantId: string): Promise<CareTask[]> {
+    if (await logado()) return tasksDb.listByPlant(plantId);
     await wait(80);
     return mockCareTasks.filter((t) => t.plantId === plantId);
   },
@@ -45,6 +64,7 @@ export const tasksService = {
 
 export const timelineService = {
   async listByPlant(plantId: string) {
+    if (await logado()) return timelineDb.listByPlant(plantId);
     await wait(80);
     return mockTimeline.filter((t) => t.plantId === plantId);
   },
