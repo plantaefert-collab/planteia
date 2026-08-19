@@ -5,7 +5,9 @@ import { DefaultChatTransport } from "ai";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { chatSuggestions, mockPlants, mockDiagnosesByPlant } from "@/lib/mock-data";
+import { chatSuggestions, mockDiagnosesByPlant } from "@/lib/mock-data";
+import { useQuery } from "@tanstack/react-query";
+import { plantsService } from "@/lib/services";
 import { ImagePlus, Send, Sprout, Loader2, X } from "lucide-react";
 import { processImageForAi } from "@/lib/image-processing";
 import { useProfile } from "@/lib/use-profile";
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/app/jardineiro")({
 
 function Chat() {
   const [input, setInput] = useState("");
-  const [plantId, setPlantId] = useState<string>(mockPlants[0]?.id ?? "");
+  const [plantId, setPlantId] = useState<string>("");
   const [attachment, setAttachment] = useState<string | null>(null);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -29,6 +31,19 @@ function Chat() {
     plantIdRef.current = plantId;
   }, [plantId]);
 
+  // Plantas do usuario (do banco quando logado; exemplos na demonstracao).
+  const plantsQuery = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
+  const plantas = useMemo(() => plantsQuery.data ?? [], [plantsQuery.data]);
+  const plantasRef = useRef(plantas);
+  useEffect(() => {
+    plantasRef.current = plantas;
+  }, [plantas]);
+
+  // Seleciona a primeira planta assim que a lista chega.
+  useEffect(() => {
+    if (!plantId && plantas.length > 0) setPlantId(plantas[0].id);
+  }, [plantId, plantas]);
+
   // Perfil do usuário (nome, nível, cidade, objetivo) enviado à IA para
   // personalizar o tratamento e a profundidade da resposta.
   const { profile } = useProfile();
@@ -38,8 +53,8 @@ function Chat() {
   }, [profile]);
 
   const activePlant = useMemo(
-    () => mockPlants.find((p) => p.id === plantId) ?? mockPlants[0],
-    [plantId],
+    () => plantas.find((p) => p.id === plantId) ?? plantas[0],
+    [plantId, plantas],
   );
 
   const transport = useMemo(
@@ -47,7 +62,8 @@ function Chat() {
       new DefaultChatTransport({
         api: "/api/chat",
         prepareSendMessagesRequest: ({ messages, body }) => {
-          const plant = mockPlants.find((p) => p.id === plantIdRef.current);
+          const plant = plantasRef.current.find((p) => p.id === plantIdRef.current);
+          // Diagnosticos ainda vem dos exemplos; plantas reais passam a ter os seus no Bloco 3.
           const diag = plant ? mockDiagnosesByPlant[plant.id] : undefined;
           const perfil = profileRef.current;
           const user = perfil
@@ -226,7 +242,12 @@ function Chat() {
         <div className="sticky bottom-0 border-t border-border bg-background pt-3">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Falando sobre:</span>
-            {mockPlants.map((p) => (
+            {plantas.length === 0 && !plantsQuery.isLoading && (
+              <span className="text-xs text-muted-foreground">
+                nenhuma planta ainda — posso ajudar mesmo assim
+              </span>
+            )}
+            {plantas.map((p) => (
               <button
                 key={p.id}
                 type="button"
