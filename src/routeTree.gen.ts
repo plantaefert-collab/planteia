@@ -29,8 +29,8 @@ import { Route as AppDiagnosticoRouteImport } from './routes/app.diagnostico'
 import { Route as AppCalendarioRouteImport } from './routes/app.calendario'
 import { Route as ApiDiagnosePhotoRouteImport } from './routes/api/diagnose-photo'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas.nova'
-import { Route as AppPlantasIdRouteImport } from './routes/app.plantas.$id'
+import { Route as AppPlantasNovaRouteImport } from './routes/app.plantas_.nova'
+import { Route as AppPlantasIdRouteImport } from './routes/app.plantas_.$id'
 
 const WireframeRoute = WireframeRouteImport.update({
   id: '/wireframe',
@@ -133,14 +133,14 @@ const ApiChatRoute = ApiChatRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppPlantasNovaRoute = AppPlantasNovaRouteImport.update({
-  id: '/nova',
-  path: '/nova',
-  getParentRoute: () => AppPlantasRoute,
+  id: '/plantas_/nova',
+  path: '/plantas/nova',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPlantasIdRoute = AppPlantasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPlantasRoute,
+  id: '/plantas_/$id',
+  path: '/plantas/$id',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -157,7 +157,7 @@ export interface FileRoutesByFullPath {
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
   '/app/perfil': typeof AppPerfilRoute
-  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
@@ -180,7 +180,7 @@ export interface FileRoutesByTo {
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
   '/app/perfil': typeof AppPerfilRoute
-  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
@@ -205,15 +205,15 @@ export interface FileRoutesById {
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
   '/app/perfil': typeof AppPerfilRoute
-  '/app/plantas': typeof AppPlantasRouteWithChildren
+  '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/signup': typeof AuthSignupRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
-  '/app/plantas/$id': typeof AppPlantasIdRoute
-  '/app/plantas/nova': typeof AppPlantasNovaRoute
+  '/app/plantas_/$id': typeof AppPlantasIdRoute
+  '/app/plantas_/nova': typeof AppPlantasNovaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -285,8 +285,8 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/lab/plantas'
     | '/app/'
-    | '/app/plantas/$id'
-    | '/app/plantas/nova'
+    | '/app/plantas_/$id'
+    | '/app/plantas_/nova'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -442,36 +442,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/plantas/nova': {
-      id: '/app/plantas/nova'
-      path: '/nova'
+    '/app/plantas_/nova': {
+      id: '/app/plantas_/nova'
+      path: '/plantas/nova'
       fullPath: '/app/plantas/nova'
       preLoaderRoute: typeof AppPlantasNovaRouteImport
-      parentRoute: typeof AppPlantasRoute
+      parentRoute: typeof AppRoute
     }
-    '/app/plantas/$id': {
-      id: '/app/plantas/$id'
-      path: '/$id'
+    '/app/plantas_/$id': {
+      id: '/app/plantas_/$id'
+      path: '/plantas/$id'
       fullPath: '/app/plantas/$id'
       preLoaderRoute: typeof AppPlantasIdRouteImport
-      parentRoute: typeof AppPlantasRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppPlantasRouteChildren {
-  AppPlantasIdRoute: typeof AppPlantasIdRoute
-  AppPlantasNovaRoute: typeof AppPlantasNovaRoute
-}
-
-const AppPlantasRouteChildren: AppPlantasRouteChildren = {
-  AppPlantasIdRoute: AppPlantasIdRoute,
-  AppPlantasNovaRoute: AppPlantasNovaRoute,
-}
-
-const AppPlantasRouteWithChildren = AppPlantasRoute._addFileChildren(
-  AppPlantasRouteChildren,
-)
 
 interface AppRouteChildren {
   AppCalendarioRoute: typeof AppCalendarioRoute
@@ -480,9 +466,11 @@ interface AppRouteChildren {
   AppInicioRoute: typeof AppInicioRoute
   AppJardineiroRoute: typeof AppJardineiroRoute
   AppPerfilRoute: typeof AppPerfilRoute
-  AppPlantasRoute: typeof AppPlantasRouteWithChildren
+  AppPlantasRoute: typeof AppPlantasRoute
   AppProdutosRoute: typeof AppProdutosRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppPlantasIdRoute: typeof AppPlantasIdRoute
+  AppPlantasNovaRoute: typeof AppPlantasNovaRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -492,9 +480,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppInicioRoute: AppInicioRoute,
   AppJardineiroRoute: AppJardineiroRoute,
   AppPerfilRoute: AppPerfilRoute,
-  AppPlantasRoute: AppPlantasRouteWithChildren,
+  AppPlantasRoute: AppPlantasRoute,
   AppProdutosRoute: AppProdutosRoute,
   AppIndexRoute: AppIndexRoute,
+  AppPlantasIdRoute: AppPlantasIdRoute,
+  AppPlantasNovaRoute: AppPlantasNovaRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -526,3 +516,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

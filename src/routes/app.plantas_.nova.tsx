@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { plantsService } from "@/lib/services";
 import { useAuth } from "@/lib/use-auth";
 
-export const Route = createFileRoute("/app/plantas/nova")({
+export const Route = createFileRoute("/app/plantas_/nova")({
   head: () => ({ meta: [{ title: "Adicionar planta · Plantae AI" }] }),
   component: NewPlant,
 });
