@@ -60,10 +60,26 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Motion — curvas. Especificação em design/motion-system.md § 0.3.
+     Nomear aqui faz o Tailwind gerar ease-standard / ease-spring / ease-calm. */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-calm: ease-in-out;
 }
 
 :root {
   --radius: 1rem;
+
+  /* Motion — durações. Especificação em design/motion-system.md § 0.2.
+     Em utilitário do Tailwind v4 a var usa parênteses: duration-(--duration-base).
+     Colchetes não geram classe e falham em silêncio. */
+  --duration-instant: 100ms;
+  --duration-quick: 200ms;
+  --duration-base: 300ms;
+  --duration-enter: 400ms;
+  --duration-deliberate: 1000ms;
+  --duration-ambient: 3600ms;
 
   /* Warm cream off-white */
   --background: oklch(0.985 0.012 95);
@@ -192,12 +208,12 @@
 /* M-001 — entrada de bloco de conteúdo de IA.
    Deslocamento maior que 8px lê como carrossel; não aumentar. */
 @utility motion-stream-in {
-  animation: stream-in 400ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation: stream-in var(--duration-enter) var(--ease-standard) both;
 }
 
 /* M-003 — preenchimento de barra de dado. Duração deliberada: pede ser notada. */
 @utility motion-bar {
-  transition: width 1000ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: width var(--duration-deliberate) var(--ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {
