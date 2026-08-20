@@ -1,163 +1,327 @@
-import type { Diagnosis } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Clock, Info, Ban, Search, Calendar, AlertCircle, XCircle } from "lucide-react";
+import type { Diagnosis, PlantStatus } from "@/lib/types";
+import { AlertCircle, CheckCircle2, Calendar, Eye, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ConfidenceBar } from "@/components/diagnosis/ConfidenceBar";
+import { DifferentialList } from "@/components/diagnosis/DifferentialList";
+import { ContextPill } from "@/components/diagnosis/ContextPill";
+import { PartialFailure } from "@/components/diagnosis/PartialFailure";
+import { StreamBlock, staggerDelay } from "@/components/diagnosis/StreamBlock";
 
-const confidenceLabel = {
-  baixa: "Confiança baixa",
-  moderada: "Confiança moderada",
-  "moderada-alta": "Confiança moderada-alta",
-  alta: "Confiança alta",
-} as const;
+/**
+ * Apresentação do diagnóstico. Implementa P-002, P-003, P-005 e P-006.
+ *
+ * Substitui a versão anterior, que empilhava oito seções abertas com o mesmo peso
+ * visual. O problema não era estética: quem chega aqui está preocupado com a planta
+ * e precisa de UMA ação, não de oito listas. A hierarquia agora é
+ *
+ *   veredito → o que fazer agora → por que penso isso → o que descartei → o resto
+ *
+ * e "o resto" fica recolhido. Ver `design/decisoes.md` D-001.
+ *
+ * Aceita `Partial<Diagnosis>` porque durante o streaming os campos chegam um a um.
+ * Todo bloco decide sozinho se já tem dado suficiente para aparecer.
+ */
 
-const confidenceClass = {
-  baixa: "bg-muted text-muted-foreground",
-  moderada: "bg-warning-soft text-warning",
-  "moderada-alta": "bg-success-soft/70 text-success",
-  alta: "bg-success-soft text-success",
-} as const;
+const STATUS_META: Record<PlantStatus, { label: string; className: string }> = {
+  saudavel: { label: "Saudável", className: "bg-success-soft text-success-dark" },
+  acompanhamento: { label: "Em observação", className: "bg-warning-soft text-warning" },
+  atencao: { label: "Requer ação", className: "bg-destructive/10 text-destructive" },
+};
 
-export function DiagnosisResult({ d }: { d: Diagnosis }) {
+export function DiagnosisResult({
+  d,
+  streaming = false,
+  onRetry,
+}: {
+  d: Partial<Diagnosis>;
+  /**
+   * Durante o streaming os blocos montam conforme os campos chegam, então o
+   * escalonamento é produzido pelo próprio fluxo. Só fora dele aplicamos o
+   * escalonamento artificial de M-001.
+   */
+  streaming?: boolean;
+  onRetry?: () => void;
+}) {
+  // Índice de bloco para o escalonamento. Incrementa só nos blocos que renderizam,
+  // senão um campo ausente abriria um buraco no ritmo da entrada.
+  let block = 0;
+  const nextDelay = () => (streaming ? 0 : staggerDelay(block++));
+
+  const status = d.status ? STATUS_META[d.status] : null;
+  const [primaryAction, ...otherActions] = d.immediateActions ?? [];
+  const hasWatchlist =
+    (d.improvementSigns?.length ?? 0) > 0 || (d.urgencySigns?.length ?? 0) > 0;
+
   return (
-    <div className="space-y-6">
-      {/* 1. Hipótese Principal */}
-      <Card className="overflow-hidden border-none bg-card shadow-sm">
-        <div className="bg-leaf p-4 text-white">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Hipótese Principal</span>
-            <div className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", confidenceClass[d.confidence])}>
-              {confidenceLabel[d.confidence]}
+    <div className="space-y-4">
+      {/* Veredito. Confiança e severidade são eixos SEPARADOS — ver P-003. */}
+      {d.mainSuspicion && (
+        <StreamBlock delayMs={nextDelay()}>
+          <div className="space-y-3 rounded-2xl bg-leaf p-4 text-background">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-[9px] font-bold uppercase tracking-[0.13em] opacity-75">
+                Provável causa
+              </span>
+              {status && (
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full bg-background/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]",
+                  )}
+                >
+                  {status.label}
+                </span>
+              )}
             </div>
+
+            <h2 className="font-display text-[22px] font-semibold leading-tight">
+              {d.mainSuspicion}
+            </h2>
+
+            {d.confidence && <ConfidenceBar confidence={d.confidence} tone="onLeaf" />}
           </div>
-          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight">{d.mainSuspicion}</h2>
-        </div>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3 rounded-xl bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-leaf" />
-            <p>Esta análise baseia-se nos sinais visuais e no histórico fornecido. Trate como uma orientação assistida.</p>
+        </StreamBlock>
+      )}
+
+      {/* P-006 — o que foi lido do histórico sem perguntar. */}
+      {d.contextUsed && d.contextUsed.length > 0 && (
+        <StreamBlock delayMs={nextDelay()}>
+          <ContextPill items={d.contextUsed} />
+        </StreamBlock>
+      )}
+
+      {/* P-005 — falha parcial nomeada, antes do conteúdo que sobreviveu. */}
+      {d.missingFields && d.missingFields.length > 0 && (
+        <StreamBlock delayMs={nextDelay()}>
+          <PartialFailure missingFields={d.missingFields} onRetry={onRetry} />
+        </StreamBlock>
+      )}
+
+      {/* Uma ação em destaque. As demais ficam abaixo, sem competir com ela. */}
+      {primaryAction && (
+        <StreamBlock delayMs={nextDelay()}>
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+              Faça agora
+            </h3>
+            <div className="flex items-start gap-2.5 rounded-2xl border border-leaf/15 bg-leaf-soft/40 p-3.5">
+              <CheckCircle2
+                className="mt-0.5 h-4 w-4 shrink-0 text-leaf"
+                aria-hidden="true"
+              />
+              <p className="text-[13px] font-semibold leading-snug">{primaryAction}</p>
+            </div>
+
+            {otherActions.length > 0 && (
+              <ul className="space-y-1.5 pl-1">
+                {otherActions.map((action, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                    <span
+                      className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-leaf/50"
+                      aria-hidden="true"
+                    />
+                    <span>{action}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </StreamBlock>
+      )}
 
-      <div className="space-y-4 px-1">
-        {/* 2. Por que pensamos isso? */}
-        <Section title="Por que pensamos isso?" icon={<Search className="h-4 w-4" />}>
-          <ul className="space-y-2">
-            {d.observedSigns.map((sign, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf/40" />
-                <span>{sign}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* 3. O que fazer agora */}
-        <Section title="O que fazer agora" icon={<CheckCircle2 className="h-4 w-4" />} variant="success">
-          <ul className="space-y-2">
-            {d.immediateActions.map((action, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm font-medium">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-success" />
-                <span>{action}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* 4. O que evitar */}
-        <Section title="O que evitar" icon={<XCircle className="h-4 w-4" />} variant="destructive">
-          <ul className="space-y-2 text-sm">
-            {d.avoid.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="font-bold text-destructive mr-1">✕</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* 5. O que observar nos próximos dias */}
-        {d.whatToObserve && d.whatToObserve.length > 0 && (
-          <Section title="O que observar" icon={<Search className="h-4 w-4" />}>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {d.whatToObserve.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 italic">
-                  <span>• {item}</span>
+      {/* Por que penso isso. Ancorado no que foi observado, não em teoria. */}
+      {d.observedSigns && d.observedSigns.length > 0 && (
+        <StreamBlock delayMs={nextDelay()}>
+          <section className="space-y-2">
+            <h3 className="text-[9px] font-bold uppercase tracking-[0.13em] text-muted-foreground">
+              O que eu vi na sua planta
+            </h3>
+            <ul className="space-y-1.5">
+              {d.observedSigns.map((sign, i) => (
+                <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                  <span
+                    className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40"
+                    aria-hidden="true"
+                  />
+                  <span>{sign}</span>
                 </li>
               ))}
             </ul>
-          </Section>
-        )}
+          </section>
+        </StreamBlock>
+      )}
 
-        {/* 6. Sinais de melhora e 7. Sinais de alerta */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-success/10 bg-success-soft/20 p-3">
-            <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-success">
-              <CheckCircle2 className="h-3 w-3" /> Melhora
-            </h4>
-            <ul className="mt-2 space-y-1 text-[11px] leading-tight text-success-dark">
-              {d.improvementSigns?.map((s, i) => <li key={i}>• {s}</li>)}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-destructive/10 bg-destructive/5 p-3">
-            <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
-              <AlertCircle className="h-3 w-3" /> Alerta
-            </h4>
-            <ul className="mt-2 space-y-1 text-[11px] leading-tight text-destructive">
-              {d.urgencySigns.map((s, i) => <li key={i}>• {s}</li>)}
-            </ul>
-          </div>
-        </div>
+      {/* P-003 — o que foi considerado e descartado. Cai para `otherPossibilities`
+          quando não há diferencial estruturado, para que nenhum caminho do app
+          termine mostrando uma hipótese única. */}
+      {((d.differential?.length ?? 0) > 0 || (d.otherPossibilities?.length ?? 0) > 0) && (
+        <StreamBlock delayMs={nextDelay()}>
+          <DifferentialList items={d.differential} plain={d.otherPossibilities ?? []} />
+        </StreamBlock>
+      )}
 
-        {/* 8. Linha do Tempo de Cuidado */}
-        {d.careTimeline && d.careTimeline.length > 0 && (
-          <Section title="Cronograma de recuperação" icon={<Calendar className="h-4 w-4" />}>
-            <div className="space-y-3 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border">
-              {d.careTimeline.map((item, i) => (
-                <div key={i} className="relative pl-6">
-                  <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-background bg-leaf ring-1 ring-leaf/20" />
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-leaf">{item.when}</p>
-                  <p className="text-sm font-medium leading-tight">{item.task}</p>
+      {/* O resto fica recolhido: existe para quem procurar, não pesa em quem não. */}
+      {(d.avoid?.length || d.whatToObserve?.length || hasWatchlist || d.careTimeline?.length) && (
+        <StreamBlock delayMs={nextDelay()}>
+          <Accordion type="single" collapsible className="rounded-2xl border border-border">
+            {d.avoid && d.avoid.length > 0 && (
+              <Panel value="avoid" icon={<XCircle className="h-3.5 w-3.5" />} title="O que evitar">
+                <ul className="space-y-1.5">
+                  {d.avoid.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                      <span className="mt-px shrink-0 font-bold text-destructive" aria-hidden="true">
+                        ✕
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+
+            {hasWatchlist && (
+              <Panel
+                value="signs"
+                icon={<AlertCircle className="h-3.5 w-3.5" />}
+                title="Como saber se está melhorando"
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <SignBox
+                    tone="success"
+                    title="Sinal de melhora"
+                    items={d.improvementSigns ?? []}
+                  />
+                  <SignBox tone="destructive" title="Sinal de alerta" items={d.urgencySigns ?? []} />
                 </div>
-              ))}
-            </div>
-          </Section>
-        )}
+              </Panel>
+            )}
 
-        <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
-          <p className="text-xs text-muted-foreground">
-            Recomendamos uma nova avaliação em <span className="font-bold text-foreground">{d.reevaluateInDays} dias</span> para ajustar o plano se necessário.
+            {d.whatToObserve && d.whatToObserve.length > 0 && (
+              <Panel
+                value="observe"
+                icon={<Eye className="h-3.5 w-3.5" />}
+                title="O que observar nos próximos dias"
+              >
+                <ul className="space-y-1.5">
+                  {d.whatToObserve.map((item, i) => (
+                    <li key={i} className="text-[12.5px] leading-snug text-muted-foreground">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+
+            {d.careTimeline && d.careTimeline.length > 0 && (
+              <Panel
+                value="timeline"
+                icon={<Calendar className="h-3.5 w-3.5" />}
+                title="Cronograma de recuperação"
+                last
+              >
+                <ol className="relative space-y-3 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-border">
+                  {d.careTimeline.map((item, i) => (
+                    <li key={i} className="relative pl-6">
+                      <span
+                        className="absolute left-0 top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-leaf"
+                        aria-hidden="true"
+                      />
+                      <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-leaf">
+                        {item.when}
+                      </p>
+                      <p className="text-[12.5px] font-medium leading-snug">{item.task}</p>
+                    </li>
+                  ))}
+                </ol>
+              </Panel>
+            )}
+          </Accordion>
+        </StreamBlock>
+      )}
+
+      {d.reevaluateInDays && (
+        <StreamBlock delayMs={nextDelay()}>
+          <p className="rounded-2xl bg-muted/40 p-3.5 text-center text-[12px] leading-relaxed text-muted-foreground">
+            Vale reavaliar em{" "}
+            <strong className="font-semibold text-foreground">
+              {d.reevaluateInDays} dias
+            </strong>{" "}
+            para comparar a evolução.
           </p>
-        </div>
-      </div>
+        </StreamBlock>
+      )}
     </div>
   );
 }
 
-function Section({ 
-  title, 
-  icon, 
-  children, 
-  variant = "default" 
-}: { 
-  title: string; 
-  icon: React.ReactNode; 
+function Panel({
+  value,
+  icon,
+  title,
+  children,
+  last = false,
+}: {
+  value: string;
+  icon: React.ReactNode;
+  title: string;
   children: React.ReactNode;
-  variant?: "default" | "success" | "destructive";
+  last?: boolean;
 }) {
-  const styles = {
-    default: "bg-muted/30 border-border text-foreground",
-    success: "bg-success-soft/30 border-success/10 text-success-dark",
-    destructive: "bg-destructive/5 border-destructive/10 text-destructive",
-  };
-
   return (
-    <section className={cn("rounded-2xl border p-4", styles[variant])}>
-      <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-        {icon}
+    <AccordionItem value={value} className={cn(last && "border-b-0")}>
+      <AccordionTrigger className="px-3.5 py-3 text-[12.5px] font-semibold hover:no-underline">
+        <span className="flex items-center gap-2 text-muted-foreground">
+          {icon}
+          <span className="text-foreground">{title}</span>
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="px-3.5 pb-3.5">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function SignBox({
+  tone,
+  title,
+  items,
+}: {
+  tone: "success" | "destructive";
+  title: string;
+  items: string[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-2.5",
+        tone === "success"
+          ? "border-success/15 bg-success-soft/25"
+          : "border-destructive/15 bg-destructive/5",
+      )}
+    >
+      <h4
+        className={cn(
+          "flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em]",
+          tone === "success" ? "text-success-dark" : "text-destructive",
+        )}
+      >
+        {tone === "success" ? (
+          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+        ) : (
+          <AlertCircle className="h-3 w-3" aria-hidden="true" />
+        )}
         {title}
-      </h3>
-      {children}
-    </section>
+      </h4>
+      <ul className="mt-1.5 space-y-1 text-[11.5px] leading-snug">
+        {items.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
