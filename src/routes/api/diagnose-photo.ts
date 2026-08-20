@@ -10,6 +10,31 @@ import { FINAL_SENTINEL } from "@/lib/diagnosis-stream";
 
 const SYSTEM_PROMPT = DIAGNOSIS_SYSTEM_PROMPT;
 
+/**
+ * Sem a data, a calibragem de estação do prompt fica inerte: o modelo não sabe
+ * em que mês estamos e não tem como inverter as estações para o Brasil.
+ */
+function blocoDeEpoca(): string {
+  const agora = new Date();
+  const mes = agora.getMonth(); // 0 = janeiro
+  const estacao =
+    mes === 11 || mes <= 1
+      ? "verão (calor e chuva na maior parte do país)"
+      : mes <= 4
+        ? "outono (transição, chuvas diminuindo)"
+        : mes <= 7
+          ? "inverno (seco na maior parte do país; frio real só no Sul)"
+          : "primavera (calor voltando, chuvas retornando)";
+  const data = agora.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  return `# Época do ano (hemisfério SUL)
+Hoje é ${data}. No Brasil estamos no ${estacao}.
+Ajuste rega e adubação a esta estação — e lembre que ela é o oposto do que a maior parte do conteúdo de jardinagem assume.`;
+}
+
 const DifferentialSchema = z.object({
   hypothesis: z.string(),
   probability: z.number(),
@@ -306,7 +331,9 @@ export const Route = createFileRoute("/api/diagnose-photo")({
             try {
               const result = streamText({
                 model,
-                system: SYSTEM_PROMPT,
+                system: `${SYSTEM_PROMPT}
+
+${blocoDeEpoca()}`,
                 temperature: 0.3,
                 messages: [
                   {

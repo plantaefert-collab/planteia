@@ -68,6 +68,31 @@ function buildUserBlock(user: NonNullable<ChatBody["context"]>["user"]): string 
   return `# Quem é o usuário\n${lines.join("\n")}\n\nUse o nome com moderação, seguindo a regra de nome da persona. Ajuste a profundidade da resposta ao nível informado.`;
 }
 
+/**
+ * Sem a data, a calibragem de estação do prompt fica inerte: o modelo não sabe
+ * em que mês estamos e não tem como inverter as estações para o Brasil.
+ */
+function blocoDeEpoca(): string {
+  const agora = new Date();
+  const mes = agora.getMonth(); // 0 = janeiro
+  const estacao =
+    mes === 11 || mes <= 1
+      ? "verão (calor e chuva na maior parte do país)"
+      : mes <= 4
+        ? "outono (transição, chuvas diminuindo)"
+        : mes <= 7
+          ? "inverno (seco na maior parte do país; frio real só no Sul)"
+          : "primavera (calor voltando, chuvas retornando)";
+  const data = agora.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  return `# Época do ano (hemisfério SUL)
+Hoje é ${data}. No Brasil estamos no ${estacao}.
+Ajuste rega e adubação a esta estação — e lembre que ela é o oposto do que a maior parte do conteúdo de jardinagem assume.`;
+}
+
 function buildContextBlock(context: ChatBody["context"]): string | null {
   if (!context?.plant) return null;
   const p = context.plant;
@@ -115,7 +140,7 @@ export const Route = createFileRoute("/api/chat")({
         const gateway = createLovableAiGatewayProvider(key);
         const model = gateway("google/gemini-3.6-flash");
 
-        const system = [SYSTEM_PROMPT, buildUserBlock(context?.user), buildContextBlock(context)]
+        const system = [SYSTEM_PROMPT, blocoDeEpoca(), buildUserBlock(context?.user), buildContextBlock(context)]
           .filter(Boolean)
           .join("\n\n");
 
