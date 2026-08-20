@@ -46,6 +46,28 @@ export type NovaPlanta = {
   acquiredAt?: string;
 };
 
+/** "hoje", "amanhã", "atrasada", "em 5 dias" — como a pessoa pensa a data. */
+function quandoLabel(iso: string): string {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  const dias = Math.round((d.getTime() - hoje.getTime()) / 86400000);
+  if (dias < 0) return dias === -1 ? "atrasada 1 dia" : `atrasada ${Math.abs(dias)} dias`;
+  if (dias === 0) return "hoje";
+  if (dias === 1) return "amanhã";
+  return `em ${dias} dias`;
+}
+
+const ROTULO_TIPO: Record<string, string> = {
+  regar: "Regar",
+  adubar: "Adubar",
+  podar: "Podar",
+  pragas: "Checar pragas",
+  fotografar: "Reavaliar com foto",
+  substrato: "Cuidar do substrato",
+};
+
 export const plantsDb = {
   async list(): Promise<Plant[]> {
     const { data, error } = await supabase
@@ -53,7 +75,35 @@ export const plantsDb = {
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []).map(paraPlanta);
+    const plantas = (data ?? []).map(paraPlanta);
+
+    // Anexa a próxima ação pendente de cada planta: é o que faz a lista dizer
+    // o que precisa de você hoje, em vez de ser só um álbum de fotos.
+    try {
+      const { data: tarefas } = await sbNovo
+        .from("care_tasks")
+        .select("plant_id, title, date, type")
+        .eq("done", false)
+        .order("date", { ascending: true });
+
+      const proxima = new Map<string, Record<string, any>>();
+      for (const t of (tarefas ?? []) as Record<string, any>[]) {
+        if (!proxima.has(t.plant_id)) proxima.set(t.plant_id, t);
+      }
+      for (const pl of plantas) {
+        const t = proxima.get(pl.id);
+        if (t) {
+          pl.nextCare = {
+            label: ROTULO_TIPO[t.type] ?? t.title,
+            whenLabel: quandoLabel(t.date),
+          };
+        }
+      }
+    } catch {
+      // Sem tarefas a lista ainda funciona — só não mostra a próxima ação.
+    }
+
+    return plantas;
   },
 
   async get(id: string): Promise<Plant | undefined> {
@@ -188,6 +238,36 @@ export const tasksDb = {
       .order("date", { ascending: true });
     if (error) throw error;
     return (data ?? []).map(paraTarefa);
+  },
+
+  /** Marca a tarefa como feita (ou reabre) — e registra a rega/adubação no diário. */
+  async toggle(taskId: string, done: boolean): Promise<void> {
+    const { data, error } = await sbNovo
+      .from("care_tasks")
+      .update({ done })
+      .eq("id", taskId)
+      .select("plant_id, type, title")
+      .single();
+    if (error) throw error;
+
+    if (done && data) {
+      const tipoDiario =
+        data.type === "regar" ? "rega" :
+        data.type === "adubar" ? "adubacao" :
+        data.type === "podar" ? "poda" :
+        data.type === "fotografar" ? "foto" : null;
+      if (tipoDiario) {
+        try {
+          await timelineDb.add({
+            plantId: data.plant_id,
+            type: tipoDiario as TimelineEntry["type"],
+            note: data.title,
+          });
+        } catch {
+          // O diário é consequência; falhar nele não desfaz a tarefa concluída.
+        }
+      }
+    }
   },
 
   async listByPlant(plantId: string): Promise<CareTask[]> {

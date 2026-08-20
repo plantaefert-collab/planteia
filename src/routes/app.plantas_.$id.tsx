@@ -200,11 +200,27 @@ function PlantDetail() {
     }
   };
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = async (taskId: string) => {
     const current = mergedTasks.find((t) => t.id === taskId);
     if (!current) return;
-    setTaskOverrides((prev) => ({ ...prev, [taskId]: !current.done }));
-    toast.success(!current.done ? "Tarefa concluída" : "Tarefa reaberta");
+    const novoEstado = !current.done;
+
+    // Responde na hora e confirma depois — marcar tarefa tem que ser instantâneo.
+    setTaskOverrides((prev) => ({ ...prev, [taskId]: novoEstado }));
+
+    try {
+      const gravou = await tasksService.toggle(taskId, novoEstado);
+      if (gravou) {
+        await qc.invalidateQueries({ queryKey: ["tasks", p.id] });
+        await qc.invalidateQueries({ queryKey: ["timeline", p.id] });
+        await qc.invalidateQueries({ queryKey: ["plants"] });
+      }
+      toast.success(novoEstado ? "Tarefa concluída" : "Tarefa reaberta");
+    } catch {
+      // Desfaz o otimismo se o banco recusou.
+      setTaskOverrides((prev) => ({ ...prev, [taskId]: current.done }));
+      toast.error("Não consegui salvar", { description: "Tente novamente." });
+    }
   };
 
   const addTimeline = (type: TimelineEntry["type"], noteText?: string) => {

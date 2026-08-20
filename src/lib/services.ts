@@ -49,6 +49,12 @@ export const plantsService = {
 };
 
 export const tasksService = {
+  /** Conclui/reabre uma tarefa. Sem sessão a mudança é só visual. */
+  async toggle(taskId: string, done: boolean): Promise<boolean> {
+    if (!(await logado())) return false;
+    await tasksDb.toggle(taskId, done);
+    return true;
+  },
   async list(): Promise<CareTask[]> {
     if (await logado()) return tasksDb.list();
     await wait(80);
