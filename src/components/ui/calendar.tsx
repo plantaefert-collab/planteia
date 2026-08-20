@@ -32,7 +32,11 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
+        // "default" é o locale do ambiente: no servidor dá "Jul", no navegador
+        // "jul." — o mesmo erro de hidratação que o data-day tinha. Só não
+        // aparece hoje porque captionLayout começa em "label" e ninguém liga
+        // o seletor. Fica travado antes que alguém ligue.
+        formatMonthDropdown: (date) => date.toLocaleString("pt-BR", { month: "short" }),
         ...formatters,
       }}
       classNames={{
