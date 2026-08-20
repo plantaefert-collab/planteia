@@ -390,6 +390,20 @@ export const diagnosesDb = {
     if (error) throw error;
     return data ?? [];
   },
+
+  /** O diagnóstico mais recente da planta, no formato que as telas usam. */
+  async latestByPlant(plantId: string): Promise<Diagnosis | null> {
+    const { data, error } = await sbNovo
+      .from("diagnoses")
+      .select("*")
+      .eq("plant_id", plantId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return paraDiagnostico(data);
+  },
 };
 
 export const carePlansDb = {
@@ -480,3 +494,25 @@ export const carePlansDb = {
     };
   },
 };
+
+
+/** Converte a linha de `diagnoses` para o formato usado nas telas. */
+function paraDiagnostico(r: Record<string, any>): Diagnosis {
+  return {
+    id: r.id,
+    plantId: r.plant_id ?? undefined,
+    createdAt: r.created_at,
+    status: r.status,
+    mainSuspicion: r.main_suspicion,
+    confidence: r.confidence,
+    observedSigns: r.observed_signs ?? [],
+    otherPossibilities: r.other_possibilities ?? [],
+    immediateActions: r.immediate_actions ?? [],
+    avoid: r.avoid ?? [],
+    urgencySigns: r.urgency_signs ?? [],
+    whatToObserve: r.what_to_observe ?? [],
+    improvementSigns: r.improvement_signs ?? [],
+    careTimeline: r.care_timeline ?? [],
+    reevaluateInDays: r.reevaluate_in_days ?? 7,
+  };
+}

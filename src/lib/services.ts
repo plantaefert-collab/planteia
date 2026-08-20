@@ -162,6 +162,9 @@ export const diagnosisService = {
     };
   },
   async getByPlant(plantId: string): Promise<Diagnosis | null> {
+    // Logado: o último diagnóstico real da planta (é o que alimenta o resumo
+    // de saúde e a aba de diagnósticos da ficha).
+    if (await logado()) return diagnosesDb.latestByPlant(plantId);
     await wait(80);
     return mockData.mockDiagnosesByPlant[plantId] ?? null;
   },
