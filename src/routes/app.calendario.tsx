@@ -20,6 +20,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/use-auth";
+import { gerarIcs, baixarIcs } from "@/lib/calendario-ics";
+import { CalendarPlus } from "lucide-react";
 import type { CareTask } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -69,6 +71,18 @@ function CalendarPage() {
       setLocalTasks(base);
       toast.error("Não consegui salvar", { description: "Tente novamente." });
     }
+  };
+
+  const exportarParaCelular = () => {
+    const pendentes = (localTasks ?? tasks.data ?? []).filter((t) => !t.done);
+    if (pendentes.length === 0) {
+      toast.info("Nada para exportar", { description: "Não há cuidados pendentes." });
+      return;
+    }
+    baixarIcs(gerarIcs(pendentes, plants.data ?? []));
+    toast.success(`${pendentes.length} cuidado(s) prontos`, {
+      description: "Abra o arquivo para adicionar ao calendário do seu celular.",
+    });
   };
 
   // Nova tarefa manual
@@ -142,7 +156,14 @@ function CalendarPage() {
             </Select>
             <Button
               size="sm"
+              variant="outline"
               className="ml-auto"
+              onClick={exportarParaCelular}
+            >
+              <CalendarPlus className="h-4 w-4" /> Levar pro meu calendário
+            </Button>
+            <Button
+              size="sm"
               onClick={() => {
                 if (!session) {
                   toast.info("Entre na sua conta", {
