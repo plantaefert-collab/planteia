@@ -7,7 +7,7 @@ import { productsDb, LOJA_URL, type ProdutoCatalogo } from "@/lib/plants-db";
 import { ExternalLink, Leaf, Info } from "lucide-react";
 
 export const Route = createFileRoute("/app/produtos")({
-  head: () => ({ meta: [{ title: "Produtos · Plantae AI" }] }),
+  head: () => ({ meta: [{ title: "Loja · Plantae AI" }] }),
   component: Produtos,
 });
 
@@ -33,7 +33,7 @@ function Produtos() {
   const produtos = useQuery({ queryKey: ["produtos"], queryFn: productsDb.list });
 
   return (
-    <AppShell title="Produtos PlantaeFert">
+    <AppShell title="Loja PlantaeFert">
       <div className="space-y-6">
         <div className="flex items-start gap-3 rounded-2xl border border-leaf/20 bg-leaf-soft/40 p-4">
           <Leaf className="mt-0.5 h-5 w-5 shrink-0 text-leaf" />

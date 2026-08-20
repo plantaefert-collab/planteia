@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Camera, Sprout } from "lucide-react";
 
 export const Route = createFileRoute("/app/inicio")({
-  head: () => ({ meta: [{ title: "Início · Plantae AI" }] }),
+  head: () => ({ meta: [{ title: "Hoje · Plantae AI" }] }),
   component: Home,
 });
 
@@ -65,7 +65,7 @@ function Home() {
         : `${pendentes.length} plantas pedem você`;
 
   return (
-    <AppShell title="Início">
+    <AppShell title="Hoje">
       <div className="space-y-4">
         <header>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">

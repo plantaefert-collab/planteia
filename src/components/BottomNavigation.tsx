@@ -1,21 +1,58 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import { useRef } from "react";
-import { Home, Sprout, Camera, Calendar, MessageCircle } from "lucide-react";
+import { Home, Sprout, Camera, ShoppingBag, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pendingCapture } from "@/lib/pending-capture";
 
 type NavItem = {
-  to: string;
+  to: LinkProps["to"];
   label: string;
   icon: typeof Home;
+  // A aba "Mais" é uma porta, não um destino: ela precisa ficar acesa
+  // enquanto o usuário estiver em qualquer tela que mora atrás dela.
+  tambem?: string[];
 };
 
-const items: NavItem[] = [
-  { to: "/app/inicio", label: "Início", icon: Home },
-  { to: "/app/plantas", label: "Plantas", icon: Sprout },
-  { to: "/app/calendario", label: "Calendário", icon: Calendar },
-  { to: "/app/jardineiro", label: "Jardineiro", icon: MessageCircle },
+const antesDoCentro: NavItem[] = [
+  { to: "/app/inicio", label: "Hoje", icon: Home },
+  { to: "/app/plantas", label: "Jardim", icon: Sprout },
 ];
+
+const depoisDoCentro: NavItem[] = [
+  { to: "/app/produtos", label: "Loja", icon: ShoppingBag },
+  {
+    to: "/app/mais",
+    label: "Mais",
+    icon: LayoutGrid,
+    tambem: ["/app/jardineiro", "/app/calendario", "/app/diario", "/app/perfil"],
+  },
+];
+
+function estaAtivo(item: NavItem, pathname: string) {
+  const rotas = [item.to, ...(item.tambem ?? [])].filter((r): r is string => !!r);
+  return rotas.some((rota) => pathname.startsWith(rota));
+}
+
+function AbaLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const Icon = item.icon;
+  const ativo = estaAtivo(item, pathname);
+  return (
+    <li className="flex items-center">
+      <Link
+        to={item.to}
+        aria-current={ativo ? "page" : undefined}
+        className={cn(
+          "flex w-full flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors",
+          ativo ? "text-leaf" : "text-muted-foreground",
+        )}
+      >
+        <Icon className="h-5 w-5" />
+        {item.label}
+      </Link>
+    </li>
+  );
+}
 
 export function BottomNavigation() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -37,6 +74,8 @@ export function BottomNavigation() {
     reader.readAsDataURL(file);
   };
 
+  const noDiagnostico = pathname.startsWith("/app/diagnostico");
+
   return (
     <nav
       aria-label="Navegação principal"
@@ -52,64 +91,37 @@ export function BottomNavigation() {
         onChange={(e) => handleCapture(e.target.files?.[0], e.currentTarget)}
       />
       <ul className="mx-auto grid max-w-md grid-cols-5">
-        <li className="flex items-center">
-          <Link
-            to="/app/inicio"
-            className={cn(
-              "flex w-full flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors",
-              pathname.startsWith("/app/inicio") ? "text-leaf" : "text-muted-foreground",
-            )}
-          >
-            <Home className="h-5 w-5" />
-            Início
-          </Link>
-        </li>
-        <li className="flex items-center">
-          <Link
-            to="/app/plantas"
-            className={cn(
-              "flex w-full flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors",
-              pathname.startsWith("/app/plantas") ? "text-leaf" : "text-muted-foreground",
-            )}
-          >
-            <Sprout className="h-5 w-5" />
-            Plantas
-          </Link>
-        </li>
+        {antesDoCentro.map((item) => (
+          <AbaLink key={item.to} item={item} pathname={pathname} />
+        ))}
+
         <li className="flex items-start justify-center">
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
-            className="-mt-6 grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-foreground shadow-lg ring-4 ring-background"
+            className={cn(
+              "flex flex-col items-center gap-1 px-1 pb-2.5 text-[11px] font-medium transition-colors",
+              noDiagnostico ? "text-leaf" : "text-muted-foreground",
+            )}
+            aria-current={noDiagnostico ? "page" : undefined}
             aria-label="Diagnosticar por foto"
           >
-            <Camera className="h-6 w-6" />
+            <span
+              className={cn(
+                // -26px, e não -24: o círculo é 56px onde o ícone das outras abas é 20,
+                // e essa diferença desalinharia a linha dos rótulos em 2px.
+                "-mt-[26px] grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-foreground shadow-lg ring-4 ring-background",
+              )}
+            >
+              <Camera className="h-6 w-6" />
+            </span>
+            Diagnóstico
           </button>
         </li>
-        <li className="flex items-center">
-          <Link
-            to="/app/calendario"
-            className={cn(
-              "flex w-full flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors",
-              pathname.startsWith("/app/calendario") ? "text-leaf" : "text-muted-foreground",
-            )}
-          >
-            <Calendar className="h-5 w-5" />
-            Calendário
-          </Link>
-        </li>
-        <li className="flex items-center">
-          <Link
-            to="/app/jardineiro"
-            className={cn(
-              "flex w-full flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors",
-              pathname.startsWith("/app/jardineiro") ? "text-leaf" : "text-muted-foreground",
-            )}
-          >
-            <MessageCircle className="h-5 w-5" />
-            Jardineiro
-          </Link>
-        </li>
+
+        {depoisDoCentro.map((item) => (
+          <AbaLink key={item.to} item={item} pathname={pathname} />
+        ))}
       </ul>
     </nav>
   );

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/app/plantas")({
-  head: () => ({ meta: [{ title: "Minhas plantas · Plantae AI" }] }),
+  head: () => ({ meta: [{ title: "Seu jardim · Plantae AI" }] }),
   component: Plants,
 });
 
@@ -49,7 +49,7 @@ function Plants() {
 
   return (
     <AppShell
-      title="Minhas plantas"
+      title="Seu jardim"
       right={
         <Button asChild size="sm" className="hidden md:inline-flex">
           <Link to="/app/plantas/nova">

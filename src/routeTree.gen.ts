@@ -24,6 +24,7 @@ import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AppProdutosRouteImport } from './routes/app.produtos'
 import { Route as AppPlantasRouteImport } from './routes/app.plantas'
 import { Route as AppPerfilRouteImport } from './routes/app.perfil'
+import { Route as AppMaisRouteImport } from './routes/app.mais'
 import { Route as AppJardineiroRouteImport } from './routes/app.jardineiro'
 import { Route as AppInicioRouteImport } from './routes/app.inicio'
 import { Route as AppDiarioRouteImport } from './routes/app.diario'
@@ -110,6 +111,11 @@ const AppPerfilRoute = AppPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMaisRoute = AppMaisRouteImport.update({
+  id: '/mais',
+  path: '/mais',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppJardineiroRoute = AppJardineiroRouteImport.update({
   id: '/jardineiro',
   path: '/jardineiro',
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/app/diario': typeof AppDiarioRoute
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/mais': typeof AppMaisRoute
   '/app/perfil': typeof AppPerfilRoute
   '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/app/diario': typeof AppDiarioRoute
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/mais': typeof AppMaisRoute
   '/app/perfil': typeof AppPerfilRoute
   '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/app/diario': typeof AppDiarioRoute
   '/app/inicio': typeof AppInicioRoute
   '/app/jardineiro': typeof AppJardineiroRoute
+  '/app/mais': typeof AppMaisRoute
   '/app/perfil': typeof AppPerfilRoute
   '/app/plantas': typeof AppPlantasRoute
   '/app/produtos': typeof AppProdutosRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/app/diario'
     | '/app/inicio'
     | '/app/jardineiro'
+    | '/app/mais'
     | '/app/perfil'
     | '/app/plantas'
     | '/app/produtos'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/app/diario'
     | '/app/inicio'
     | '/app/jardineiro'
+    | '/app/mais'
     | '/app/perfil'
     | '/app/plantas'
     | '/app/produtos'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/app/diario'
     | '/app/inicio'
     | '/app/jardineiro'
+    | '/app/mais'
     | '/app/perfil'
     | '/app/plantas'
     | '/app/produtos'
@@ -445,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPerfilRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/mais': {
+      id: '/app/mais'
+      path: '/mais'
+      fullPath: '/app/mais'
+      preLoaderRoute: typeof AppMaisRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/jardineiro': {
       id: '/app/jardineiro'
       path: '/jardineiro'
@@ -524,6 +543,7 @@ interface AppRouteChildren {
   AppDiarioRoute: typeof AppDiarioRoute
   AppInicioRoute: typeof AppInicioRoute
   AppJardineiroRoute: typeof AppJardineiroRoute
+  AppMaisRoute: typeof AppMaisRoute
   AppPerfilRoute: typeof AppPerfilRoute
   AppPlantasRoute: typeof AppPlantasRoute
   AppProdutosRoute: typeof AppProdutosRoute
@@ -538,6 +558,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDiarioRoute: AppDiarioRoute,
   AppInicioRoute: AppInicioRoute,
   AppJardineiroRoute: AppJardineiroRoute,
+  AppMaisRoute: AppMaisRoute,
   AppPerfilRoute: AppPerfilRoute,
   AppPlantasRoute: AppPlantasRoute,
   AppProdutosRoute: AppProdutosRoute,
