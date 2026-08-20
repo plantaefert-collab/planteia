@@ -4,6 +4,8 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FocoDoDia } from "@/components/inicio/FocoDoDia";
 import { MosaicoDoJardim } from "@/components/inicio/MosaicoDoJardim";
+import { FaixaDeAcoes } from "@/components/inicio/FaixaDeAcoes";
+import { RegistroRapido, type Cuidado } from "@/components/inicio/RegistroRapido";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { plantsService, tasksService } from "@/lib/services";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +35,7 @@ function Home() {
   const plantas = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
   const tarefas = useQuery({ queryKey: ["tasks"], queryFn: tasksService.list });
   const [concluindo, setConcluindo] = useState<string | null>(null);
+  const [registro, setRegistro] = useState<Cuidado | null>(null);
 
   const concluir = useMutation({
     mutationFn: (id: string) => tasksService.toggle(id, true),
@@ -74,6 +77,8 @@ function Home() {
           )}
         </header>
 
+        <FaixaDeAcoes onRegistrar={setRegistro} />
+
         {carregando && <Skeleton className="h-[300px] w-full rounded-[18px]" />}
 
         {!carregando && foco && (
@@ -106,6 +111,17 @@ function Home() {
 
         {!carregando && (plantas.data?.length ?? 0) === 0 && <PrimeiraPlanta />}
       </div>
+
+      <RegistroRapido
+        aberto={registro !== null}
+        cuidadoInicial={registro ?? "rega"}
+        plantas={plantas.data ?? []}
+        onFechar={() => setRegistro(null)}
+        onRegistrado={() => {
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+          qc.invalidateQueries({ queryKey: ["plants"] });
+        }}
+      />
     </AppShell>
   );
 }
