@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   diagnosisService,
@@ -30,6 +30,7 @@ import {
   produtoPorId, type FormatoProduto,
 } from "@/lib/produtos";
 import { useAuth } from "@/lib/use-auth";
+import { processImageForAi } from "@/lib/image-processing";
 import { useQueryClient } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { CareTaskCard } from "@/components/CareTaskCard";
@@ -116,6 +117,10 @@ function PlantDetail() {
   const [quantidade, setQuantidade] = useState<string>("");
   const [unidade, setUnidade] = useState<string>("");
   const [salvandoRegistro, setSalvandoRegistro] = useState(false);
+  // Foto do diário: é ela que constrói a linha do tempo da evolução.
+  const [fotoDiario, setFotoDiario] = useState<string | null>(null);
+  const [preparandoFoto, setPreparandoFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
   const { session } = useAuth();
   const qc = useQueryClient();
 
@@ -234,12 +239,32 @@ function PlantDetail() {
     setExtraTimeline((prev) => [entry, ...prev]);
   };
 
+  const escolherFoto = async (file: File | undefined, input: HTMLInputElement) => {
+    input.value = "";
+    if (!file) return;
+    setPreparandoFoto(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      setFotoDiario(await processImageForAi(dataUrl));
+    } catch {
+      toast.error("Não consegui carregar a imagem.");
+    } finally {
+      setPreparandoFoto(false);
+    }
+  };
+
   const limparDialog = () => {
     setNote("");
     setProdutoId("");
     setFormato("");
     setQuantidade("");
     setUnidade("");
+    setFotoDiario(null);
     setDialog(null);
   };
 
@@ -267,10 +292,15 @@ function PlantDetail() {
     if (session) {
       setSalvandoRegistro(true);
       try {
+        let fotoUrl: string | undefined;
+        if (dialog === "foto" && fotoDiario) {
+          fotoUrl = await plantsService.uploadPhoto(fotoDiario);
+        }
         await timelineService.add({
           plantId: p.id,
           type: tipo,
           note: texto,
+          photo: fotoUrl,
           productId: dialog === "adubacao" ? produtoId || undefined : undefined,
           doseAmount: dialog === "adubacao" && quantidade ? Number(quantidade) : undefined,
           doseUnit: dialog === "adubacao" ? unidade || undefined : undefined,
@@ -614,6 +644,50 @@ function PlantDetail() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {dialog === "foto" && (
+            <div className="space-y-2">
+              <Label>Foto de hoje</Label>
+              <input
+                ref={fotoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => escolherFoto(e.target.files?.[0], e.currentTarget)}
+              />
+              {fotoDiario ? (
+                <div className="relative w-fit">
+                  <img
+                    src={fotoDiario}
+                    alt="Prévia"
+                    className="h-32 w-32 rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFotoDiario(null)}
+                    aria-label="Remover foto"
+                    className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-foreground text-background shadow"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={preparandoFoto}
+                  onClick={() => fotoInputRef.current?.click()}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  {preparandoFoto ? "Preparando…" : "Escolher foto"}
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Fotografe do mesmo ângulo das anteriores — é assim que a evolução fica visível.
+              </p>
             </div>
           )}
 

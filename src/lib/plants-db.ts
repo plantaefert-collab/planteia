@@ -109,7 +109,30 @@ export const plantsDb = {
   async get(id: string): Promise<Plant | undefined> {
     const { data, error } = await supabase.from("plants").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
-    return data ? paraPlanta(data) : undefined;
+    if (!data) return undefined;
+    const planta = paraPlanta(data);
+
+    // A ficha abre respondendo "o que fazer com esta planta agora".
+    try {
+      const { data: t } = await sbNovo
+        .from("care_tasks")
+        .select("title, date, type")
+        .eq("plant_id", id)
+        .eq("done", false)
+        .order("date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (t) {
+        planta.nextCare = {
+          label: ROTULO_TIPO[t.type] ?? t.title,
+          whenLabel: quandoLabel(t.date),
+        };
+      }
+    } catch {
+      // Sem tarefa a ficha continua completa — só não destaca a próxima ação.
+    }
+
+    return planta;
   },
 
   async create(input: NovaPlanta): Promise<Plant> {
