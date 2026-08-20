@@ -1,0 +1,62 @@
+{
+  "name": "Plantae AI — Seu jardineiro inteligente",
+  "short_name": "Plantae AI",
+  "description": "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/app/inicio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FCFAF1",
+  "background_color": "#FCFAF1",
+  "categories": [
+    "lifestyle",
+    "education",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Diagnosticar por foto",
+      "short_name": "Diagnosticar",
+      "url": "/app/diagnostico",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Jardineiro IA",
+      "short_name": "Jardineiro",
+      "url": "/app/jardineiro",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

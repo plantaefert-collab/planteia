@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { RegistrarServiceWorker } from "@/components/RegistrarServiceWorker";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -78,7 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#1f3a2b" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Plantae AI" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { title: "Plantae AI — Seu jardineiro inteligente" },
       {
         name: "description",
@@ -95,9 +99,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Plantae AI — Seu jardineiro inteligente" },
-      { name: "twitter:description", content: "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2" },
+      {
+        name: "twitter:description",
+        content:
+          "Diagnóstico assistido por IA, plano personalizado e calendário de cuidados para suas plantas — começando por orquídeas.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/568f4a38-608d-4a73-b831-b3411cfe9af2",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -108,6 +124,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -118,8 +137,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
+        {/* Fora do HeadContent de propósito: ele deduplica meta por `name`,
+            e as duas variantes de theme-color precisam coexistir. Em modo
+            instalado esta cor pinta a barra de status, e o cabeçalho do app
+            é creme — o verde da marca criaria uma faixa emendada em cima. */}
+        <meta name="theme-color" content="#FCFAF1" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#111A14" media="(prefers-color-scheme: dark)" />
         <HeadContent />
       </head>
       <body>
@@ -137,6 +162,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors position="top-center" />
+      <RegistrarServiceWorker />
     </QueryClientProvider>
   );
 }

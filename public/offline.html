@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0E492A" />
+    <title>Sem conexão · Plantae AI</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100svh;
+        display: grid; place-items: center; padding: 24px;
+        background: #fcfaf1; color: #3b4a3e;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        line-height: 1.6; text-align: center;
+      }
+      .caixa { max-width: 34ch; }
+      .marca {
+        width: 64px; height: 64px; margin: 0 auto 24px;
+        border-radius: 18px; background: #0e492a;
+        display: grid; place-items: center;
+        box-shadow: 0 2px 4px -2px rgb(26 38 24 / 0.06), 0 8px 20px -8px rgb(26 38 24 / 0.15);
+      }
+      h1 {
+        font-family: Fraunces, Georgia, serif; font-weight: 600;
+        font-size: 26px; line-height: 1.15; color: #132419; margin: 0 0 10px;
+      }
+      p { margin: 0 0 8px; font-size: 15px; color: #5c6a5e; }
+      .nota { font-size: 13px; color: #8a9589; margin-top: 20px; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #111a14; color: #c2cfc1; }
+        h1 { color: #e4ede2; }
+        p { color: #97a695; }
+        .nota { color: #6f7d6e; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="caixa">
+      <div class="marca" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fcfaf1"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+        </svg>
+      </div>
+      <h1>Sem conexão</h1>
+      <p>O Plantae AI precisa de internet para analisar fotos e conversar com o Jardineiro.</p>
+      <p>Assim que o sinal voltar, é só recarregar.</p>
+      <p class="nota">Suas plantas e cuidados continuam salvos.</p>
+    </div>
+  </body>
+</html>
