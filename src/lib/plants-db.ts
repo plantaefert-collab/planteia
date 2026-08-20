@@ -186,6 +186,12 @@ export type NovoRegistroDiario = {
   type: TimelineEntry["type"];
   note?: string;
   photo?: string;
+  /**
+   * Quando o cuidado aconteceu. Ausente = agora.
+   * Existe para o registro retroativo ("reguei ontem"): sem isso o app recusa a
+   * realidade e obriga a pessoa a mentir a data.
+   */
+  date?: string;
   /** Só para adubação: o que foi aplicado e quanto. */
   productId?: string;
   doseAmount?: number;
@@ -205,7 +211,7 @@ export const timelineDb = {
         user_id: userId,
         plant_id: r.plantId,
         type: r.type,
-        date: new Date().toISOString(),
+        date: r.date ?? new Date().toISOString(),
         note: r.note ?? null,
         photo: r.photo ?? null,
         product_id: r.productId ?? null,
@@ -217,12 +223,25 @@ export const timelineDb = {
       .single();
     if (error) throw error;
 
-    // Rega e adubação atualizam os atalhos da ficha da planta.
-    const agora = new Date().toISOString();
-    if (r.type === "rega") {
-      await supabase.from("plants").update({ last_watered: agora }).eq("id", r.plantId);
-    } else if (r.type === "adubacao") {
-      await supabase.from("plants").update({ last_fertilized: agora }).eq("id", r.plantId);
+    // Rega e adubação atualizam os atalhos da ficha — mas só se este registro for
+    // MAIS RECENTE que o guardado. Sem esta guarda, anotar "reguei semana passada"
+    // empurraria a última rega para trás e o app passaria a cobrar água à toa.
+    if (r.type === "rega" || r.type === "adubacao") {
+      const quando = r.date ?? new Date().toISOString();
+      const { data: atual } = await supabase
+        .from("plants")
+        .select("last_watered, last_fertilized")
+        .eq("id", r.plantId)
+        .maybeSingle();
+      const anterior = r.type === "rega" ? atual?.last_watered : atual?.last_fertilized;
+      const maisRecente = !anterior || new Date(quando) > new Date(anterior);
+      if (maisRecente) {
+        if (r.type === "rega") {
+          await supabase.from("plants").update({ last_watered: quando }).eq("id", r.plantId);
+        } else {
+          await supabase.from("plants").update({ last_fertilized: quando }).eq("id", r.plantId);
+        }
+      }
     }
 
     return {
@@ -761,3 +780,103 @@ export const productsDb = {
     }));
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Saúde da planta — derivada, nunca inventada
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SaudeDaPlanta = {
+  /** 0 a 100. */
+  score: number;
+  rotulo: "Saudável" | "Em observação" | "Precisa de atenção";
+  /** O que puxou o número para baixo — a tela deve mostrar, senão vira nota sem prova. */
+  motivos: string[];
+};
+
+/**
+ * Calcula a saúde a partir do que existe de fato: o último diagnóstico e as
+ * tarefas em atraso.
+ *
+ * Devolve `null` quando não há base — planta recém-cadastrada, sem diagnóstico
+ * e sem tarefa. Preferimos não mostrar nota a mostrar "100%" para uma planta
+ * sobre a qual não sabemos nada: isso seria inventar, e a IA tem regra explícita
+ * contra afirmar com certeza sem informação.
+ */
+export async function calcularSaude(plantId: string): Promise<SaudeDaPlanta | null> {
+  const [{ data: diag }, { data: tarefas }] = await Promise.all([
+    sbNovo
+      .from("diagnoses")
+      .select("status, confidence, created_at")
+      .eq("plant_id", plantId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sbNovo
+      .from("care_tasks")
+      .select("title, date")
+      .eq("plant_id", plantId)
+      .eq("done", false),
+  ]);
+
+  const atrasadas = ((tarefas ?? []) as Record<string, any>[]).filter(
+    (t) => new Date(t.date) < new Date(new Date().toDateString()),
+  );
+
+  if (!diag && atrasadas.length === 0) return null;
+
+  let score = 100;
+  const motivos: string[] = [];
+
+  if (diag) {
+    // Diagnóstico de confiança baixa pesa menos: punir forte com base numa
+    // hipótese fraca seria transformar incerteza em veredito.
+    const peso = diag.confidence === "baixa" ? 0.5 : diag.confidence === "moderada" ? 0.8 : 1;
+    if (diag.status === "atencao") {
+      score -= Math.round(38 * peso);
+      motivos.push("Último diagnóstico apontou atenção");
+    } else if (diag.status === "acompanhamento") {
+      score -= Math.round(15 * peso);
+      motivos.push("Em acompanhamento desde o último diagnóstico");
+    }
+
+    // Diagnóstico velho não descreve mais o presente.
+    const dias = Math.floor((Date.now() - new Date(diag.created_at).getTime()) / 86400000);
+    if (dias > 30) motivos.push(`Última avaliação há ${dias} dias`);
+  }
+
+  if (atrasadas.length > 0) {
+    score -= Math.min(30, atrasadas.length * 10);
+    motivos.push(
+      atrasadas.length === 1
+        ? "1 cuidado atrasado"
+        : `${atrasadas.length} cuidados atrasados`,
+    );
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  const rotulo = score >= 80 ? "Saudável" : score >= 55 ? "Em observação" : "Precisa de atenção";
+  return { score, rotulo, motivos };
+}
+
+/**
+ * Quanto falta para a próxima rega, em fração de 0 a 1.
+ *
+ * Esta é a versão HONESTA do "anel de umidade do solo": não medimos umidade —
+ * não há sensor. O que sabemos de verdade é quantos dias se passaram desde a
+ * última rega e de quantos em quantos dias esta planta costuma pedir água.
+ * O anel mostra isso, e a legenda deve dizer isso ("3 de 5 dias"), nunca "62%
+ * de umidade", que seria um número inventado com cara de medição.
+ */
+export function progressoAteProximaRega(
+  p: Pick<Plant, "lastWatered" | "wateringFrequencyDays">,
+): { diasDesde: number; intervalo: number; fracao: number; atrasada: boolean } | null {
+  if (!p.lastWatered || !p.wateringFrequencyDays) return null;
+  const diasDesde = Math.floor((Date.now() - new Date(p.lastWatered).getTime()) / 86400000);
+  const intervalo = p.wateringFrequencyDays;
+  return {
+    diasDesde,
+    intervalo,
+    fracao: Math.min(1, diasDesde / intervalo),
+    atrasada: diasDesde > intervalo,
+  };
+}

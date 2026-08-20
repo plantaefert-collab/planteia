@@ -2,7 +2,7 @@ import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from 
 import * as mockData from "./mock-data";
 import {
   plantsDb, tasksDb, timelineDb, usuarioAtual,
-  diagnosesDb, carePlansDb,
+  diagnosesDb, carePlansDb, calcularSaude,
   type NovaPlanta, type DadosDiagnostico, type NovoRegistroDiario,
 } from "./plants-db";
 import {
@@ -268,6 +268,14 @@ export const diagnosisService = {
     if (await logado()) return diagnosesDb.latestByPlant(plantId);
     await wait(80);
     return mockData.mockDiagnosesByPlant[plantId] ?? null;
+  },
+};
+
+export const saudeService = {
+  /** Saúde derivada do que existe; null quando não há base para afirmar nada. */
+  async daPlanta(plantId: string) {
+    if (!(await logado())) return null;
+    return calcularSaude(plantId);
   },
 };
 
