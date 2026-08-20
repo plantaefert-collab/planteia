@@ -10,6 +10,8 @@ import { diagnosisHistory, type PhotoDiagnosisHistoryEntry } from "@/lib/diagnos
 import type { AnalysisStepId } from "@/lib/diagnosis-stream";
 import { pendingCapture } from "@/lib/pending-capture";
 import { pendingDiagnosis } from "@/lib/pending-diagnosis";
+import { ComparacaoEvolucao } from "@/components/diagnosis/ComparacaoEvolucao";
+import { diagnosesDb } from "@/lib/plants-db";
 import { diagnosesService } from "@/lib/services";
 import { 
   Sparkles, 
@@ -116,6 +118,8 @@ function DiagnosisPage() {
   const [savingPlan, setSavingPlan] = useState(false);
   // Id da linha em `diagnoses` depois de salvo (liga o plano ao diagnóstico).
   const [diagnosisRowId, setDiagnosisRowId] = useState<string | null>(null);
+  // Diagnóstico anterior da mesma planta, para responder "melhorou?".
+  const [anterior, setAnterior] = useState<Awaited<ReturnType<typeof diagnosesDb.anteriorDaPlanta>>>(null);
   const [addedPlan, setAddedPlan] = useState<CarePlan | null>(null);
   // P-001 — sem fase estimada e sem percentual. O progresso é derivado dos campos
   // que realmente chegaram do modelo; ver `src/lib/diagnosis-stream.ts`.
@@ -125,6 +129,16 @@ function DiagnosisPage() {
   const [history, setHistory] = useState<PhotoDiagnosisHistoryEntry[]>([]);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Reavaliação vinda do calendário: a planta já é conhecida e o objetivo
+  // também, então pular a escolha de planta e de objetivo é o certo — a pessoa
+  // veio para refazer a foto, não para recomeçar do zero.
+  useEffect(() => {
+    if (mode === "acompanhamento" && plantId) {
+      setObjective((o) => o || "acompanhar");
+      setStep((atual) => (atual === "intro" ? "symptom" : atual));
+    }
+  }, [mode, plantId]);
 
   // Consome a foto capturada pelo botão da barra inferior: entra direto no
   // passo de sintomas com a 1ª foto já salva (entrada fluida, sem "pulo").
@@ -229,6 +243,18 @@ function DiagnosisPage() {
       // Encerra o fluxo e mostra o resultado imediatamente; arquivar vem depois.
       setStreamPartial(null);
       setStep("result");
+
+      // Busca o diagnóstico anterior ANTES de gravar o novo — depois de gravar,
+      // o mais recente passaria a ser o próprio resultado que acabou de sair.
+      if (_plant?.id) {
+        try {
+          setAnterior(await diagnosesDb.anteriorDaPlanta(_plant.id));
+        } catch {
+          setAnterior(null);
+        }
+      } else {
+        setAnterior(null);
+      }
 
       // Logado: o diagnóstico e as fotos vão para o banco (o histórico local
       // continua servindo a demonstração de quem não tem conta).
@@ -828,6 +854,19 @@ function DiagnosisPage() {
               </div>
             ) : (
               <>
+                {/* Reavaliação: a primeira coisa que a pessoa quer saber é se
+                    melhorou — vem antes do diagnóstico em si. */}
+                {result && anterior && (
+                  <ComparacaoEvolucao
+                    anterior={anterior}
+                    atual={{
+                      mainSuspicion: result.mainSuspicion,
+                      status: result.status,
+                      photo: photos[0],
+                    }}
+                  />
+                )}
+
                 <DiagnosisResult
                   d={result ?? streamPartial ?? {}}
                   streaming={!result}

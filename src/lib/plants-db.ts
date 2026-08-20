@@ -466,16 +466,64 @@ export const diagnosesDb = {
       .select("id")
       .single();
     if (error) throw error;
+
+    // O estado da planta passa a refletir o último diagnóstico — é o que faz a
+    // lista e a ficha mostrarem melhora ou piora sem a pessoa marcar nada.
+    if (dados.plantId) {
+      await supabase
+        .from("plants")
+        .update({ status: d.status })
+        .eq("id", dados.plantId)
+        .then(() => undefined, () => undefined);
+    }
+
     return data.id as string;
+  },
+
+  /**
+   * Resumo do diagnóstico anterior da planta, para comparar com o novo.
+   * `exceto` evita comparar o diagnóstico consigo mesmo quando ele já foi salvo.
+   */
+  async anteriorDaPlanta(
+    plantId: string,
+    exceto?: string,
+  ): Promise<{ id: string; mainSuspicion: string; status: string; createdAt: string; photo?: string } | null> {
+    let q = sbNovo
+      .from("diagnoses")
+      .select("id, main_suspicion, status, created_at, photos")
+      .eq("plant_id", plantId)
+      .order("created_at", { ascending: false })
+      .limit(2);
+    const { data, error } = await q;
+    if (error) throw error;
+    const linhas = ((data ?? []) as Record<string, any>[]).filter((r) => r.id !== exceto);
+    const r = linhas[0];
+    if (!r) return null;
+    return {
+      id: r.id,
+      mainSuspicion: r.main_suspicion,
+      status: r.status,
+      createdAt: r.created_at,
+      photo: (r.photos ?? [])[0],
+    };
   },
 
   /** Liga um diagnóstico feito "sem cadastro" à planta recém-criada. */
   async attachToPlant(rowId: string, plantId: string): Promise<void> {
-    const { error } = await sbNovo
+    const { data, error } = await sbNovo
       .from("diagnoses")
       .update({ plant_id: plantId })
-      .eq("id", rowId);
+      .eq("id", rowId)
+      .select("status")
+      .single();
     if (error) throw error;
+    if (data?.status) {
+      await supabase
+        .from("plants")
+        .update({ status: data.status })
+        .eq("id", plantId)
+        .then(() => undefined, () => undefined);
+    }
   },
 
   async listByPlant(plantId: string) {

@@ -2,6 +2,7 @@ import { Check, Droplets, Sprout, Scissors, Bug, Camera, Layers } from "lucide-r
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import type { CareTask, CareType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,18 @@ export function CareTaskCard({
           )}
         </div>
       </div>
+      {/* Reavaliação não se "marca como feita": ela se faz. O atalho leva direto
+          ao diagnóstico da planta, que é o que a tarefa está pedindo. */}
+      {task.type === "fotografar" && !task.done && (
+        <Button asChild size="sm" variant="outline" className="shrink-0">
+          <Link
+            to="/app/diagnostico"
+            search={{ plantId: task.plantId, mode: "acompanhamento" }}
+          >
+            Reavaliar
+          </Link>
+        </Button>
+      )}
       <Button
         size="sm"
         variant={task.done ? "ghost" : "outline"}
