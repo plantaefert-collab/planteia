@@ -10,6 +10,10 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Transição entre rotas pela View Transitions API — plataforma aprovada em
+    // design/motion-system.md § 0.1. As curvas e durações ficam no CSS
+    // (styles.css, ::view-transition), não aqui.
+    defaultViewTransition: true,
   });
 
   return router;

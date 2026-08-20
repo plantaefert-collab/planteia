@@ -227,3 +227,72 @@
     transition-duration: 1ms;
   }
 }
+
+/* ------------------------------------------------------------
+   M-004 — transição entre rotas (View Transitions API)
+   Habilitada em src/router.tsx via defaultViewTransition.
+
+   O que ela comunica: continuidade. A página que sai recua e some;
+   a que entra sobe e aparece. Deslocamento pequeno de propósito —
+   isto é navegação de app, não carrossel.
+
+   A moldura não acompanha a página: a barra de navegação inferior
+   ganha snapshot próprio, senão ela pisca junto a cada troca de aba.
+   ------------------------------------------------------------ */
+
+@keyframes page-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-standard);
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root) {
+  animation-name: page-leave;
+}
+
+::view-transition-new(root) {
+  animation-name: page-enter;
+}
+
+/* A tab bar é moldura, não conteúdo: sai do snapshot da página e
+   transiciona sozinha, então o indicador de aba ativa desliza em vez
+   de piscar. Seletor semântico — não depende de classe do Tailwind. */
+nav[aria-label="Navegação principal"] {
+  view-transition-name: barra-navegacao;
+}
+
+::view-transition-group(barra-navegacao) {
+  animation-duration: var(--duration-quick);
+  animation-timing-function: var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Remove o deslocamento, preserva a troca de estado: a transição
+     continua existindo, só deixa de se mover. Ver motion-system.md § 0.4. */
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(barra-navegacao) {
+    animation-duration: 1ms;
+  }
+  ::view-transition-old(root) {
+    animation-name: none;
+  }
+  ::view-transition-new(root) {
+    animation-name: none;
+  }
+}
