@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as LabPlantasRouteImport } from './routes/lab.plantas'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
+import { Route as AuthRedefinirRouteImport } from './routes/auth.redefinir'
 import { Route as AuthRecoverRouteImport } from './routes/auth.recover'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AppProdutosRouteImport } from './routes/app.produtos'
@@ -70,6 +71,11 @@ const LabPlantasRoute = LabPlantasRouteImport.update({
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRedefinirRoute = AuthRedefinirRouteImport.update({
+  id: '/redefinir',
+  path: '/redefinir',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthRecoverRoute = AuthRecoverRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
+  '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
+  '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app': typeof AppIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/app/produtos': typeof AppProdutosRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/recover': typeof AuthRecoverRoute
+  '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/auth/login'
     | '/auth/recover'
+    | '/auth/redefinir'
     | '/auth/signup'
     | '/lab/plantas'
     | '/app/'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/auth/login'
     | '/auth/recover'
+    | '/auth/redefinir'
     | '/auth/signup'
     | '/lab/plantas'
     | '/app'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/auth/login'
     | '/auth/recover'
+    | '/auth/redefinir'
     | '/auth/signup'
     | '/lab/plantas'
     | '/app/'
@@ -356,6 +368,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/auth/signup'
       preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/redefinir': {
+      id: '/auth/redefinir'
+      path: '/redefinir'
+      fullPath: '/auth/redefinir'
+      preLoaderRoute: typeof AuthRedefinirRouteImport
       parentRoute: typeof AuthRoute
     }
     '/auth/recover': {
@@ -492,12 +511,14 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRecoverRoute: typeof AuthRecoverRoute
+  AuthRedefinirRoute: typeof AuthRedefinirRoute
   AuthSignupRoute: typeof AuthSignupRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRecoverRoute: AuthRecoverRoute,
+  AuthRedefinirRoute: AuthRedefinirRoute,
   AuthSignupRoute: AuthSignupRoute,
 }
 

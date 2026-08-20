@@ -5,22 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignInButton, OrDivider } from "@/components/GoogleSignInButton";
 import { supabase } from "@/integrations/supabase/client";
-import { traduzErroAuth } from "@/lib/auth-helpers";
+import { traduzErroAuth, regrasSenha } from "@/lib/auth-helpers";
 import { Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/signup")({
   component: Signup,
 });
-
-/** Regras exigidas pelo servidor — mostradas na tela para evitar erro às cegas. */
-function regrasSenha(senha: string) {
-  return [
-    { ok: senha.length >= 6, texto: "Pelo menos 6 caracteres" },
-    { ok: /[a-z]/.test(senha) && /[A-Z]/.test(senha), texto: "Letra maiúscula e minúscula" },
-    { ok: /\d/.test(senha), texto: "Pelo menos um número" },
-  ];
-}
 
 function Signup() {
   const navigate = useNavigate();

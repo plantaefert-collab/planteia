@@ -57,3 +57,16 @@ export async function destinoPosLogin(): Promise<"/onboarding" | "/app/inicio"> 
     return "/app/inicio";
   }
 }
+
+/**
+ * Regras exigidas pelo servidor, mostradas na tela para a pessoa não errar às
+ * cegas. Compartilhadas entre criar conta e redefinir senha — se divergirem,
+ * uma das telas mente sobre o que o servidor aceita.
+ */
+export function regrasSenha(senha: string) {
+  return [
+    { ok: senha.length >= 6, texto: "Pelo menos 6 caracteres" },
+    { ok: /[a-z]/.test(senha) && /[A-Z]/.test(senha), texto: "Letra maiúscula e minúscula" },
+    { ok: /\d/.test(senha), texto: "Pelo menos um número" },
+  ];
+}
