@@ -35,12 +35,8 @@ export function PlantCard({ plant }: { plant: Plant }) {
         <div className="p-4 pb-2">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-foreground">
-                {plant.nickname}
-              </h3>
-              <p className="truncate text-sm text-muted-foreground">
-                {plant.species}
-              </p>
+              <h3 className="truncate text-base font-semibold text-foreground">{plant.nickname}</h3>
+              <p className="truncate text-sm text-muted-foreground">{plant.species}</p>
             </div>
             <ChevronRight
               aria-hidden
@@ -68,15 +64,13 @@ export function PlantCard({ plant }: { plant: Plant }) {
               search: { plantId: plant.id },
             })
           }
-          className="relative z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2"
+          className="tap-safe relative z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2"
           aria-label={`Diagnosticar ${plant.nickname}`}
         >
           <Stethoscope className="h-3.5 w-3.5" />
           Diagnosticar
         </button>
-        <span className="text-xs text-muted-foreground">
-          Toque no card para ver a ficha
-        </span>
+        <span className="text-xs text-muted-foreground">Toque no card para ver a ficha</span>
       </div>
     </article>
   );

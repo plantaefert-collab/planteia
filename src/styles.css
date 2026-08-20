@@ -328,3 +328,49 @@ nav[aria-label="Navegação principal"] {
     animation-name: none;
   }
 }
+
+/* ------------------------------------------------------------
+   Alvo de toque — `tap-safe`
+
+   Em ponteiro grosso (dedo), garante 44px de área tocável sem mudar
+   o tamanho visual do elemento. É o que o iOS faz: o link continua
+   com 16px de altura na tela, mas o dedo acerta 44.
+
+   Aumentar o elemento resolveria o toque e estragaria a composição;
+   aumentar só a área resolve os dois.
+
+   Uso: adicionar a classe no controle pequeno. Não aplicar em
+   elemento que já use ::after.
+   ------------------------------------------------------------ */
+
+@utility tap-safe {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      translate: 0 -50%;
+      min-height: 44px;
+    }
+  }
+}
+
+/* Variante para controle quadrado (ícone): expande nos dois eixos. */
+@utility tap-safe-square {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 50%;
+      margin: -22px;
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}

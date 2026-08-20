@@ -26,9 +26,7 @@ function Home() {
       <div className="space-y-6">
         <section>
           <p className="text-sm text-muted-foreground">Olá, Maria 👋</p>
-          <h2 className="mt-1 font-display text-2xl font-semibold">
-            Vamos cuidar do seu jardim?
-          </h2>
+          <h2 className="mt-1 font-display text-2xl font-semibold">Vamos cuidar do seu jardim?</h2>
         </section>
 
         {alertPlant && (
@@ -56,7 +54,7 @@ function Home() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-base font-semibold">Cuidados de hoje</h3>
-            <Link to="/app/calendario" className="text-xs font-medium text-leaf">
+            <Link to="/app/calendario" className="tap-safe text-xs font-medium text-leaf">
               Ver tudo
             </Link>
           </div>
@@ -101,7 +99,7 @@ function Home() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-base font-semibold">Suas plantas</h3>
-            <Link to="/app/plantas" className="text-xs font-medium text-leaf">
+            <Link to="/app/plantas" className="tap-safe text-xs font-medium text-leaf">
               Ver todas
             </Link>
           </div>
@@ -117,12 +115,10 @@ function Home() {
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-leaf">
-            Dica do dia
-          </p>
+          <p className="text-xs font-medium uppercase tracking-wide text-leaf">Dica do dia</p>
           <p className="mt-1 text-sm text-foreground/90">
-            Orquídeas Phalaenopsis gostam de luz indireta clara. Se as folhas
-            estiverem muito verdes e alongadas, pode estar faltando luz.
+            Orquídeas Phalaenopsis gostam de luz indireta clara. Se as folhas estiverem muito verdes
+            e alongadas, pode estar faltando luz.
           </p>
         </section>
       </div>
