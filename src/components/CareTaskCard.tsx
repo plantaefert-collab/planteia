@@ -80,7 +80,9 @@ export function CareTaskCard({
         variant={task.done ? "ghost" : "outline"}
         onClick={() => onToggle?.(task.id)}
         className={cn(
-          "shrink-0 h-9 w-9 p-0 rounded-full transition-all",
+          // 36x36 é menor que o mínimo tocável (44px). tap-safe-square expande só a
+          // área do dedo, sem mexer no tamanho visual do botão.
+          "tap-safe-square shrink-0 h-9 w-9 p-0 rounded-full transition-all",
           task.done ? "text-success bg-success-soft/30 hover:bg-success-soft/50" : "hover:border-leaf hover:text-leaf"
         )}
       >
