@@ -48,7 +48,8 @@ export interface CareTask {
   date: string; // ISO
   done: boolean;
   priority?: TaskPriority;
-  origin?: "diagnostico" | "manual";
+  /** "automatica" = gerada pelo app a partir da frequência de rega. */
+  origin?: "diagnostico" | "manual" | "automatica";
 }
 
 export type PlanStatus = "nao_iniciado" | "em_andamento" | "aguardando_reavaliacao" | "concluido" | "ajustado" | "interrompido";

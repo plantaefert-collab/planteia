@@ -293,6 +293,80 @@ export const tasksDb = {
     }
   },
 
+  /** Cria uma tarefa avulsa (a pessoa marcando algo que quer lembrar). */
+  async create(t: {
+    plantId: string;
+    type: CareType;
+    title: string;
+    date: string;
+    description?: string;
+  }): Promise<CareTask> {
+    const userId = await usuarioAtual();
+    if (!userId) throw new Error("Entre na sua conta para criar tarefas.");
+    const { data, error } = await sbNovo
+      .from("care_tasks")
+      .insert({
+        user_id: userId,
+        plant_id: t.plantId,
+        type: t.type,
+        title: t.title,
+        description: t.description ?? null,
+        date: t.date,
+        origin: "manual",
+      })
+      .select("*")
+      .single();
+    if (error) throw error;
+    return paraTarefa(data);
+  },
+
+  /**
+   * Garante que cada planta com frequência de rega definida tenha uma rega
+   * pendente no calendário. É isto que faz o calendário "trabalhar sozinho":
+   * a pessoa não deveria precisar agendar a própria rega.
+   *
+   * Idempotente: só cria para quem não tem rega em aberto.
+   */
+  async ensureWateringTasks(): Promise<number> {
+    const userId = await usuarioAtual();
+    if (!userId) return 0;
+
+    const { data: plantas } = await supabase
+      .from("plants")
+      .select("id, nickname, watering_frequency_days, last_watered");
+    const comFrequencia = (plantas ?? []).filter((p) => p.watering_frequency_days);
+    if (comFrequencia.length === 0) return 0;
+
+    const { data: pendentes } = await sbNovo
+      .from("care_tasks")
+      .select("plant_id")
+      .eq("type", "regar")
+      .eq("done", false);
+    const jaTem = new Set((pendentes ?? []).map((t: Record<string, any>) => t.plant_id));
+
+    const novas = comFrequencia
+      .filter((p) => !jaTem.has(p.id))
+      .map((p) => {
+        const base = p.last_watered ? new Date(p.last_watered) : new Date();
+        const quando = new Date(base.getTime() + p.watering_frequency_days! * 86400000);
+        // Rega vencida não some: aparece como atrasada, hoje.
+        const data = quando < new Date() ? new Date() : quando;
+        return {
+          user_id: userId,
+          plant_id: p.id,
+          type: "regar",
+          title: `Regar ${p.nickname}`,
+          date: data.toISOString(),
+          origin: "automatica",
+        };
+      });
+
+    if (novas.length === 0) return 0;
+    const { error } = await sbNovo.from("care_tasks").insert(novas);
+    if (error) throw error;
+    return novas.length;
+  },
+
   async listByPlant(plantId: string): Promise<CareTask[]> {
     const { data, error } = await sbNovo
       .from("care_tasks")

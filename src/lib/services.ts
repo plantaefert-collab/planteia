@@ -60,8 +60,19 @@ export const tasksService = {
     await tasksDb.toggle(taskId, done);
     return true;
   },
+  async create(t: Parameters<typeof tasksDb.create>[0]) {
+    return tasksDb.create(t);
+  },
+  /** Repõe as regas pendentes antes de listar — o calendário se mantém sozinho. */
+  async ensureWatering() {
+    if (!(await logado())) return 0;
+    return tasksDb.ensureWateringTasks();
+  },
   async list(): Promise<CareTask[]> {
-    if (await logado()) return tasksDb.list();
+    if (await logado()) {
+      await tasksDb.ensureWateringTasks().catch(() => 0);
+      return tasksDb.list();
+    }
     await wait(80);
     return mockCareTasks;
   },
