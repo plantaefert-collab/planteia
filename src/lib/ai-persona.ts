@@ -221,7 +221,11 @@ nutrição geral / base → **Bokashi Líquido Premium** | mais flores → Orqu�
 **Sobre doses:** as doses listadas acima são oficiais — informe com segurança. Para produtos marcados como "não confirmada", ou para qualquer diluição que você não conheça, **não invente**: oriente o uso e peça para conferir o rótulo.`;
 
 /** Prompt completo para o chat conversacional (persona + catálogo). */
+import { CONHECIMENTO_TECNICO } from "./conhecimento-tecnico";
+
 export const CHAT_SYSTEM_PROMPT = `${PERSONA_CORE}
+
+${CONHECIMENTO_TECNICO}
 
 ${PLANTAE_FERT_CATALOG}
 
@@ -234,6 +238,8 @@ Quando o caso for técnico, estruture: sinais observados → hipótese principal
  * saída em JSON — tratadas no próprio endpoint).
  */
 export const DIAGNOSIS_SYSTEM_PROMPT = `${PERSONA_CORE}
+
+${CONHECIMENTO_TECNICO}
 
 # Tarefa: diagnóstico visual por foto
 Analise as fotos e o contexto e produza um diagnóstico estruturado.

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/ai-persona";
+import { fichaDaEspecie } from "@/lib/conhecimento-tecnico";
 
 const SYSTEM_PROMPT = CHAT_SYSTEM_PROMPT;
 
@@ -140,7 +141,11 @@ export const Route = createFileRoute("/api/chat")({
         const gateway = createLovableAiGatewayProvider(key);
         const model = gateway("google/gemini-3.6-flash");
 
-        const system = [SYSTEM_PROMPT, blocoDeEpoca(), buildUserBlock(context?.user), buildContextBlock(context)]
+        // Ficha da família entra só quando sabemos de que planta se trata — assim a
+        // profundidade por espécie não pesa em toda mensagem.
+        const ficha = fichaDaEspecie(context?.plant?.species, context?.plant?.scientific, context?.plant?.nickname);
+
+        const system = [SYSTEM_PROMPT, blocoDeEpoca(), ficha, buildUserBlock(context?.user), buildContextBlock(context)]
           .filter(Boolean)
           .join("\n\n");
 

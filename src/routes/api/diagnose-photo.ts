@@ -3,6 +3,7 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { DIAGNOSIS_SYSTEM_PROMPT } from "@/lib/ai-persona";
+import { fichaDaEspecie } from "@/lib/conhecimento-tecnico";
 // O separador entre o texto do modelo e o objeto final autoritativo mora em lib
 // para que cliente e servidor compartilhem a mesma definição - duplicar a
 // constante aqui seria a forma mais fácil de o protocolo divergir em silêncio.
@@ -331,9 +332,7 @@ export const Route = createFileRoute("/api/diagnose-photo")({
             try {
               const result = streamText({
                 model,
-                system: `${SYSTEM_PROMPT}
-
-${blocoDeEpoca()}`,
+                system: [SYSTEM_PROMPT, blocoDeEpoca(), fichaDaEspecie(body.plantSpecies)].filter(Boolean).join("\n\n"),
                 temperature: 0.3,
                 messages: [
                   {

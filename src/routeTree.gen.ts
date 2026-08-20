@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as LabPlantasRouteImport } from './routes/lab.plantas'
+import { Route as LabCameraRouteImport } from './routes/lab.camera'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthRedefinirRouteImport } from './routes/auth.redefinir'
 import { Route as AuthRecoverRouteImport } from './routes/auth.recover'
@@ -66,6 +67,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const LabPlantasRoute = LabPlantasRouteImport.update({
   id: '/lab/plantas',
   path: '/lab/plantas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabCameraRoute = LabCameraRouteImport.update({
+  id: '/lab/camera',
+  path: '/lab/camera',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/camera': typeof LabCameraRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/camera': typeof LabCameraRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app': typeof AppIndexRoute
   '/app/plantas/$id': typeof AppPlantasIdRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/auth/recover': typeof AuthRecoverRoute
   '/auth/redefinir': typeof AuthRedefinirRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/lab/camera': typeof LabCameraRoute
   '/lab/plantas': typeof LabPlantasRoute
   '/app/': typeof AppIndexRoute
   '/app/plantas_/$id': typeof AppPlantasIdRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/auth/recover'
     | '/auth/redefinir'
     | '/auth/signup'
+    | '/lab/camera'
     | '/lab/plantas'
     | '/app/'
     | '/app/plantas/$id'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/auth/recover'
     | '/auth/redefinir'
     | '/auth/signup'
+    | '/lab/camera'
     | '/lab/plantas'
     | '/app'
     | '/app/plantas/$id'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/auth/recover'
     | '/auth/redefinir'
     | '/auth/signup'
+    | '/lab/camera'
     | '/lab/plantas'
     | '/app/'
     | '/app/plantas_/$id'
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   WireframeRoute: typeof WireframeRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiDiagnosePhotoRoute: typeof ApiDiagnosePhotoRoute
+  LabCameraRoute: typeof LabCameraRoute
   LabPlantasRoute: typeof LabPlantasRoute
 }
 
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/plantas'
       fullPath: '/lab/plantas'
       preLoaderRoute: typeof LabPlantasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/camera': {
+      id: '/lab/camera'
+      path: '/lab/camera'
+      fullPath: '/lab/camera'
+      preLoaderRoute: typeof LabCameraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -532,6 +552,7 @@ const rootRouteChildren: RootRouteChildren = {
   WireframeRoute: WireframeRoute,
   ApiChatRoute: ApiChatRoute,
   ApiDiagnosePhotoRoute: ApiDiagnosePhotoRoute,
+  LabCameraRoute: LabCameraRoute,
   LabPlantasRoute: LabPlantasRoute,
 }
 export const routeTree = rootRouteImport
