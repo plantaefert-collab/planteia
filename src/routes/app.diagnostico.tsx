@@ -240,16 +240,19 @@ function DiagnosisPage() {
         // Falhar ao arquivar não pode esconder o diagnóstico do usuário.
       }
 
-      if (photos.length > 0) {
+      // Usa os valores efetivos da chamada, não os do estado: quando `analyze` é
+      // chamado com override (reexecução a partir do histórico) o estado ainda
+      // não foi atualizado, e o histórico gravava a entrada anterior.
+      if (_photos.length > 0) {
         try {
           diagnosisHistory.add({
-            plantId: selected?.id,
-            plantNickname: selected?.nickname,
-            plantSpecies: selected?.species,
-            symptom: symptomText,
-            objective,
-            answers,
-            photos,
+            plantId: _plant?.id,
+            plantNickname: _plant?.nickname,
+            plantSpecies: _plant?.species,
+            symptom: _symptom,
+            objective: _objective,
+            answers: _answers,
+            photos: _photos,
             diagnosis: r,
           });
           setHistory(diagnosisHistory.list());
