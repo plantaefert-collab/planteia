@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { RegistrarServiceWorker } from "@/components/RegistrarServiceWorker";
+import { SilenciarTransicaoAbortada } from "@/components/SilenciarTransicaoAbortada";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -165,6 +166,7 @@ function RootComponent() {
       <Outlet />
       <Toaster richColors position="top-center" />
       <RegistrarServiceWorker />
+      <SilenciarTransicaoAbortada />
     </QueryClientProvider>
   );
 }
