@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { FocoDoDia } from "@/components/inicio/FocoDoDia";
 import { MosaicoDoJardim } from "@/components/inicio/MosaicoDoJardim";
 import { FaixaDeAcoes } from "@/components/inicio/FaixaDeAcoes";
+import { BlocosVivos } from "@/components/inicio/BlocosVivos";
 import { RegistroRapido, type Cuidado } from "@/components/inicio/RegistroRapido";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { plantsService, tasksService } from "@/lib/services";
@@ -107,6 +108,13 @@ function Home() {
             </p>
             <MosaicoDoJardim plantas={plantas.data ?? []} />
           </>
+        )}
+
+        {!carregando && (plantas.data?.length ?? 0) > 0 && (
+          <section className="pt-1">
+            <h3 className="mb-2 text-sm font-semibold">Também dá para</h3>
+            <BlocosVivos plantas={plantas.data ?? []} />
+          </section>
         )}
 
         {!carregando && (plantas.data?.length ?? 0) === 0 && <PrimeiraPlanta />}

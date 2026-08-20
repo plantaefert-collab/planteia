@@ -62,9 +62,13 @@ export function RegistroRapido({
     setSalvando(true);
     try {
       const quando = QUANDO.find((q) => q.id === diasAtras)?.rotulo.toLowerCase() ?? "hoje";
+      // A data do cuidado, não a de agora: "reguei ontem" precisa gravar ontem,
+      // senão o plano se ajusta pelo dia errado e o app segue cobrando a rega.
+      const quandoISO = new Date(Date.now() - diasAtras * 86_400_000).toISOString();
       await timelineService.add({
         plantId: plantaId,
         type: cuidado,
+        date: quandoISO,
         note: diasAtras > 0 ? `Registrado depois — ${quando}` : undefined,
         ...(cuidado === "adubacao" && dose
           ? { doseAmount: Number(dose) || undefined, doseUnit: "ml" }
