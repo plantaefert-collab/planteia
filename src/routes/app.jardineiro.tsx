@@ -6,8 +6,10 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { chatSuggestions, mockDiagnosesByPlant } from "@/lib/mock-data";
+import { useAuth } from "@/lib/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { plantsService } from "@/lib/services";
+import { chatDb, diagnosesDb } from "@/lib/plants-db";
 import { ImagePlus, Send, Sprout, Loader2, X } from "lucide-react";
 import { processImageForAi } from "@/lib/image-processing";
 import { useProfile } from "@/lib/use-profile";
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/app/jardineiro")({
 });
 
 function Chat() {
+  const { session } = useAuth();
   const [input, setInput] = useState("");
   const [plantId, setPlantId] = useState<string>("");
   const [attachment, setAttachment] = useState<string | null>(null);
@@ -30,6 +33,25 @@ function Chat() {
   useEffect(() => {
     plantIdRef.current = plantId;
   }, [plantId]);
+
+  // Último diagnóstico REAL da planta selecionada. Antes o contexto procurava
+  // nos diagnósticos de exemplo, e com plantas reais nunca encontrava nada —
+  // então a IA falava da planta sem saber que ela tinha sido diagnosticada.
+  const ultimoDiagRef = useRef<{ mainSuspicion: string; status: string; createdAt: string } | null>(null);
+  useEffect(() => {
+    let ativo = true;
+    ultimoDiagRef.current = null;
+    if (!plantId || !session) return;
+    diagnosesDb
+      .anteriorDaPlanta(plantId)
+      .then((d) => {
+        if (ativo) ultimoDiagRef.current = d;
+      })
+      .catch(() => undefined);
+    return () => {
+      ativo = false;
+    };
+  }, [plantId, session]);
 
   // Plantas do usuario (do banco quando logado; exemplos na demonstracao).
   const plantsQuery = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
@@ -63,8 +85,8 @@ function Chat() {
         api: "/api/chat",
         prepareSendMessagesRequest: ({ messages, body }) => {
           const plant = plantasRef.current.find((p) => p.id === plantIdRef.current);
-          // Diagnosticos ainda vem dos exemplos; plantas reais passam a ter os seus no Bloco 3.
-          const diag = plant ? mockDiagnosesByPlant[plant.id] : undefined;
+          // Real quando existe; os exemplos só servem à demonstração sem conta.
+          const diag = ultimoDiagRef.current ?? (plant ? mockDiagnosesByPlant[plant.id] : undefined);
           const perfil = profileRef.current;
           const user = perfil
             ? {
@@ -111,8 +133,46 @@ function Chat() {
     [],
   );
 
-  const { messages, sendMessage, status } = useChat({
+  // Memória: sem isto a IA recomeça do zero a cada visita.
+  const [historico, setHistorico] = useState<{ id: string; role: "user" | "assistant"; parts: { type: "text"; text: string }[] }[] | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    if (!session) {
+      setHistorico([]);
+      return;
+    }
+    chatDb
+      .list()
+      .then((msgs) => {
+        if (!ativo) return;
+        setHistorico(
+          msgs.map((m) => ({
+            id: m.id,
+            role: m.role,
+            parts: [{ type: "text" as const, text: m.content }],
+          })),
+        );
+      })
+      .catch(() => ativo && setHistorico([]));
+    return () => {
+      ativo = false;
+    };
+  }, [session]);
+
+  const { messages, sendMessage, status, setMessages } = useChat({
     transport,
+    onFinish: ({ message }) => {
+      // Grava a resposta da IA. O texto vem em partes.
+      const texto = (message.parts ?? [])
+        .map((p: any) => (p.type === "text" ? p.text : ""))
+        .join("");
+      if (texto.trim()) {
+        chatDb
+          .add({ role: "assistant", content: texto, plantId: plantIdRef.current || undefined })
+          .catch(() => undefined);
+      }
+    },
     onError: (err) => {
       toast.error("Não consegui responder agora", {
         description: err.message.includes("429")
@@ -125,6 +185,14 @@ function Chat() {
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+
+  // Semeia a conversa com o que já foi dito antes (uma vez só).
+  const semeadoRef = useRef(false);
+  useEffect(() => {
+    if (semeadoRef.current || !historico || historico.length === 0) return;
+    semeadoRef.current = true;
+    setMessages(historico as never);
+  }, [historico, setMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -143,8 +211,13 @@ function Chat() {
     const img = attachment;
     setInput("");
     setAttachment(null);
+    const textoEnviado = trimmed || "Segue a foto da minha planta. O que você observa?";
+    chatDb
+      .add({ role: "user", content: textoEnviado, plantId: plantIdRef.current || undefined, photo: img ?? undefined })
+      .catch(() => undefined);
+
     await sendMessage({
-      text: trimmed || "Segue a foto da minha planta. O que você observa?",
+      text: textoEnviado,
       ...(img ? { files: [{ type: "file" as const, mediaType: "image/jpeg", url: img }] } : {}),
     });
   };

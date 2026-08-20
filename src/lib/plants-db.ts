@@ -661,3 +661,100 @@ function paraDiagnostico(r: Record<string, any>): Diagnosis {
     reevaluateInDays: r.reevaluate_in_days ?? 7,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloco 7 — memória do chat
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type MensagemSalva = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  photo?: string;
+  plantId?: string;
+  createdAt: string;
+};
+
+export const chatDb = {
+  /** Últimas mensagens do usuário, em ordem cronológica. */
+  async list(limite = 50): Promise<MensagemSalva[]> {
+    const { data, error } = await sbNovo
+      .from("chat_messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limite);
+    if (error) throw error;
+    return ((data ?? []) as Record<string, any>[])
+      .reverse()
+      .map((r) => ({
+        id: r.id,
+        role: r.role,
+        content: r.content,
+        photo: r.photo ?? undefined,
+        plantId: r.plant_id ?? undefined,
+        createdAt: r.created_at,
+      }));
+  },
+
+  async add(m: {
+    role: "user" | "assistant";
+    content: string;
+    plantId?: string;
+    photo?: string;
+  }): Promise<void> {
+    const userId = await usuarioAtual();
+    if (!userId) return;
+    await sbNovo.from("chat_messages").insert({
+      user_id: userId,
+      plant_id: m.plantId ?? null,
+      role: m.role,
+      content: m.content,
+      photo: m.photo ?? null,
+    });
+  },
+
+  async clear(): Promise<void> {
+    const userId = await usuarioAtual();
+    if (!userId) return;
+    await sbNovo.from("chat_messages").delete().eq("user_id", userId);
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloco 8 — catálogo de produtos
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ProdutoCatalogo = {
+  id: string;
+  name: string;
+  category: "base" | "especifico" | "outro";
+  goal?: string;
+  moment?: string;
+  formats: string[];
+  url?: string;
+  image?: string;
+};
+
+export const LOJA_URL = "https://www.plantaefert.com.br";
+
+export const productsDb = {
+  /** Catálogo é público: não depende de sessão. */
+  async list(): Promise<ProdutoCatalogo[]> {
+    const { data, error } = await sbNovo
+      .from("products")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+    return ((data ?? []) as Record<string, any>[]).map((r) => ({
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      goal: r.goal ?? undefined,
+      moment: r.moment ?? undefined,
+      formats: r.formats ?? [],
+      url: r.url ?? undefined,
+      image: r.image ?? undefined,
+    }));
+  },
+};
