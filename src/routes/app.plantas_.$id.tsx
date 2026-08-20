@@ -25,10 +25,8 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  PRODUTOS, unidadesDoFormato, ROTULO_FORMATO, descreverDose,
-  produtoPorId, type FormatoProduto,
-} from "@/lib/produtos";
+import { ROTULO_FORMATO, descreverDose, type FormatoProduto } from "@/lib/produtos";
+import { productsDb } from "@/lib/plants-db";
 import { useAuth } from "@/lib/use-auth";
 import { processImageForAi } from "@/lib/image-processing";
 import { useQueryClient } from "@tanstack/react-query";
@@ -117,6 +115,11 @@ function PlantDetail() {
   const [quantidade, setQuantidade] = useState<string>("");
   const [unidade, setUnidade] = useState<string>("");
   const [salvandoRegistro, setSalvandoRegistro] = useState(false);
+
+  // Catálogo do banco — a lista fixa em produtos.ts ficou defasada (não tinha
+  // gramados nem farelado) e não sabia que gramado se mede por m².
+  const catalogo = useQuery({ queryKey: ["produtos"], queryFn: productsDb.list });
+  const produtoSelecionado = (catalogo.data ?? []).find((x) => x.id === produtoId);
   // Foto do diário: é ela que constrói a linha do tempo da evolução.
   const [fotoDiario, setFotoDiario] = useState<string | null>(null);
   const [preparandoFoto, setPreparandoFoto] = useState(false);
@@ -559,18 +562,19 @@ function PlantDetail() {
                   value={produtoId}
                   onValueChange={(v) => {
                     setProdutoId(v);
-                    const f = produtoPorId(v)?.formatos[0] ?? "";
+                    const pr = (catalogo.data ?? []).find((x) => x.id === v);
+                    const f = pr?.formats[0] ?? "";
                     setFormato(f as FormatoProduto);
-                    setUnidade(f ? unidadesDoFormato(f as FormatoProduto)[0] : "");
+                    setUnidade(pr?.doseUnits[0] ?? "");
                   }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha o produto (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PRODUTOS.map((pr) => (
+                    {(catalogo.data ?? []).map((pr) => (
                       <SelectItem key={pr.id} value={pr.id}>
-                        {pr.nome}
+                        {pr.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -585,16 +589,17 @@ function PlantDetail() {
                       value={formato}
                       onValueChange={(v) => {
                         setFormato(v as FormatoProduto);
-                        setUnidade(unidadesDoFormato(v as FormatoProduto)[0]);
+                        // Gramado continua em m² mesmo trocando o formato.
+                        setUnidade(produtoSelecionado?.doseUnits[0] ?? "");
                       }}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {(produtoPorId(produtoId)?.formatos ?? []).map((f) => (
+                        {(produtoSelecionado?.formats ?? []).map((f) => (
                           <SelectItem key={f} value={f}>
-                            {ROTULO_FORMATO[f]}
+                            {ROTULO_FORMATO[f as FormatoProduto] ?? f}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -622,7 +627,7 @@ function PlantDetail() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(formato ? unidadesDoFormato(formato) : []).map((u) => (
+                          {(produtoSelecionado?.doseUnits ?? []).map((u) => (
                             <SelectItem key={u} value={u}>
                               {u}
                             </SelectItem>

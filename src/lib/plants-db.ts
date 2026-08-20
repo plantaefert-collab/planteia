@@ -731,6 +731,8 @@ export type ProdutoCatalogo = {
   goal?: string;
   moment?: string;
   formats: string[];
+  /** Medidas que fazem sentido para este produto (gramado é por m², não por borrifada). */
+  doseUnits: string[];
   url?: string;
   image?: string;
 };
@@ -753,6 +755,7 @@ export const productsDb = {
       goal: r.goal ?? undefined,
       moment: r.moment ?? undefined,
       formats: r.formats ?? [],
+      doseUnits: r.dose_units ?? [],
       url: r.url ?? undefined,
       image: r.image ?? undefined,
     }));
