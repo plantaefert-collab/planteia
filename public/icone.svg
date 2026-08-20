@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Plantae AI">
+  <rect width="512" height="512" rx="112" fill="#1f3a2b"/>
+  <path d="M256 392c0-96 44-160 132-188-8 104-60 168-132 188z" fill="#8fcda6"/>
+  <path d="M256 392c0-80-36-132-108-156 6 86 48 138 108 156z" fill="#5b9c73"/>
+  <rect x="246" y="300" width="20" height="112" rx="10" fill="#e7f0e9"/>
+</svg>

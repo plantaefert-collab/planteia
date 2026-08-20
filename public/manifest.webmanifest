@@ -1,0 +1,20 @@
+{
+  "name": "Plantae AI — Seu jardineiro virtual",
+  "short_name": "Plantae AI",
+  "description": "Diagnóstico por foto, plano de cuidados e acompanhamento das suas plantas.",
+  "start_url": "/app/inicio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f4ed",
+  "theme_color": "#1f3a2b",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
