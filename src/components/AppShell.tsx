@@ -58,9 +58,7 @@ export function AppShell({
                   to={it.to}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
-                    active
-                      ? "bg-leaf-soft text-leaf"
-                      : "text-muted-foreground hover:bg-muted",
+                    active ? "bg-leaf-soft text-leaf" : "text-muted-foreground hover:bg-muted",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -69,15 +67,20 @@ export function AppShell({
               );
             })}
           </nav>
-          <p className="mt-4 px-3 text-xs text-muted-foreground">
-            PlantaeFert · MVP
-          </p>
+          <p className="mt-4 px-3 text-xs text-muted-foreground">PlantaeFert · MVP</p>
         </aside>
 
         {/* Main column */}
         <main className="min-w-0 flex-1 pb-24 md:pb-6">
           {/* Mobile header */}
-          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+          <header
+            // O documento declara viewport-fit=cover, então o app ocupa a
+            // faixa do notch. Sem compensar aqui, o logo e o título ficam
+            // embaixo do relógio e da bateria num PWA instalado. O fundo da
+            // barra continua subindo até o topo; só o conteúdo desce.
+            style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+            className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 pb-3 backdrop-blur md:hidden"
+          >
             <div className="flex items-center gap-2">
               {left ? (
                 left
