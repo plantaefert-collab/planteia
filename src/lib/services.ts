@@ -1,6 +1,10 @@
 import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from "./types";
 import * as mockData from "./mock-data";
-import { plantsDb, tasksDb, timelineDb, usuarioAtual, type NovaPlanta } from "./plants-db";
+import {
+  plantsDb, tasksDb, timelineDb, usuarioAtual,
+  diagnosesDb, carePlansDb,
+  type NovaPlanta, type DadosDiagnostico, type NovoRegistroDiario,
+} from "./plants-db";
 import {
   consumeDiagnosisStream,
   completedSteps,
@@ -50,6 +54,12 @@ export const plantsService = {
 };
 
 export const tasksService = {
+  /** Conclui/reabre uma tarefa. Sem sessão a mudança é só visual. */
+  async toggle(taskId: string, done: boolean): Promise<boolean> {
+    if (!(await logado())) return false;
+    await tasksDb.toggle(taskId, done);
+    return true;
+  },
   async list(): Promise<CareTask[]> {
     if (await logado()) return tasksDb.list();
     await wait(80);
@@ -63,6 +73,11 @@ export const tasksService = {
 };
 
 export const timelineService = {
+  /** Registra um cuidado. Sem sessão não há onde gravar. */
+  async add(r: NovoRegistroDiario) {
+    if (!(await logado())) return null;
+    return timelineDb.add(r);
+  },
   async listByPlant(plantId: string) {
     if (await logado()) return timelineDb.listByPlant(plantId);
     await wait(80);
@@ -237,13 +252,32 @@ export const diagnosisService = {
   },
 
   async getByPlant(plantId: string): Promise<Diagnosis | null> {
+    // Logado: o último diagnóstico real da planta (é o que alimenta o resumo
+    // de saúde e a aba de diagnósticos da ficha).
+    if (await logado()) return diagnosesDb.latestByPlant(plantId);
     await wait(80);
     return mockData.mockDiagnosesByPlant[plantId] ?? null;
   },
 };
 
+export const diagnosesService = {
+  /** Salva o diagnóstico no banco. Só faz sentido com sessão. */
+  async save(dados: DadosDiagnostico): Promise<string | null> {
+    if (!(await logado())) return null;
+    return diagnosesDb.create(dados);
+  },
+};
+
 export const carePlanService = {
-  async createFromDiagnosis(plantId: string, diagnosis: Diagnosis): Promise<CarePlan> {
+  async createFromDiagnosis(
+    plantId: string,
+    diagnosis: Diagnosis,
+    diagnosisRowId?: string,
+  ): Promise<CarePlan> {
+    // Logado: plano e tarefas gravados de verdade (inclusive a reavaliação).
+    if (await logado()) {
+      return carePlansDb.createFromDiagnosis(plantId, diagnosis, diagnosisRowId);
+    }
     await wait(500);
     const scenario = Object.values(mockData.diagnosisScenarios).find(s => s.title === diagnosis.mainSuspicion) || mockData.diagnosisScenarios.investigacao;
     

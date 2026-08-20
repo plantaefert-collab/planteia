@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   diagnosisService,
@@ -21,6 +21,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  PRODUTOS, unidadesDoFormato, ROTULO_FORMATO, descreverDose,
+  produtoPorId, type FormatoProduto,
+} from "@/lib/produtos";
+import { useAuth } from "@/lib/use-auth";
+import { processImageForAi } from "@/lib/image-processing";
+import { useQueryClient } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -100,6 +111,18 @@ function PlantDetail() {
     null,
   );
   const [note, setNote] = useState("");
+  // O que foi aplicado (só para adubação) — é isto que torna "adubei" consultável.
+  const [produtoId, setProdutoId] = useState<string>("");
+  const [formato, setFormato] = useState<FormatoProduto | "">("");
+  const [quantidade, setQuantidade] = useState<string>("");
+  const [unidade, setUnidade] = useState<string>("");
+  const [salvandoRegistro, setSalvandoRegistro] = useState(false);
+  // Foto do diário: é ela que constrói a linha do tempo da evolução.
+  const [fotoDiario, setFotoDiario] = useState<string | null>(null);
+  const [preparandoFoto, setPreparandoFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+  const { session } = useAuth();
+  const qc = useQueryClient();
 
   const plant = useQuery({
     queryKey: ["plant", id],
@@ -182,11 +205,27 @@ function PlantDetail() {
     }
   };
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = async (taskId: string) => {
     const current = mergedTasks.find((t) => t.id === taskId);
     if (!current) return;
-    setTaskOverrides((prev) => ({ ...prev, [taskId]: !current.done }));
-    toast.success(!current.done ? "Tarefa concluída" : "Tarefa reaberta");
+    const novoEstado = !current.done;
+
+    // Responde na hora e confirma depois — marcar tarefa tem que ser instantâneo.
+    setTaskOverrides((prev) => ({ ...prev, [taskId]: novoEstado }));
+
+    try {
+      const gravou = await tasksService.toggle(taskId, novoEstado);
+      if (gravou) {
+        await qc.invalidateQueries({ queryKey: ["tasks", p.id] });
+        await qc.invalidateQueries({ queryKey: ["timeline", p.id] });
+        await qc.invalidateQueries({ queryKey: ["plants"] });
+      }
+      toast.success(novoEstado ? "Tarefa concluída" : "Tarefa reaberta");
+    } catch {
+      // Desfaz o otimismo se o banco recusou.
+      setTaskOverrides((prev) => ({ ...prev, [taskId]: current.done }));
+      toast.error("Não consegui salvar", { description: "Tente novamente." });
+    }
   };
 
   const addTimeline = (type: TimelineEntry["type"], noteText?: string) => {
@@ -200,23 +239,90 @@ function PlantDetail() {
     setExtraTimeline((prev) => [entry, ...prev]);
   };
 
-  const confirmQuickAction = () => {
-    if (!dialog) return;
-    if (dialog === "rega") {
-      addTimeline("rega", note || "Rega registrada");
-      toast.success("Rega registrada");
-    } else if (dialog === "adubacao") {
-      addTimeline("adubacao", note || "Adubação registrada");
-      toast.success("Adubação registrada");
-    } else if (dialog === "foto") {
-      addTimeline("foto", note || "Foto adicionada (demonstrativo)");
-      toast.success("Foto adicionada");
-    } else if (dialog === "obs") {
-      addTimeline("diagnostico", note || "Observação registrada");
-      toast.success("Observação registrada");
+  const escolherFoto = async (file: File | undefined, input: HTMLInputElement) => {
+    input.value = "";
+    if (!file) return;
+    setPreparandoFoto(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      setFotoDiario(await processImageForAi(dataUrl));
+    } catch {
+      toast.error("Não consegui carregar a imagem.");
+    } finally {
+      setPreparandoFoto(false);
     }
+  };
+
+  const limparDialog = () => {
     setNote("");
+    setProdutoId("");
+    setFormato("");
+    setQuantidade("");
+    setUnidade("");
+    setFotoDiario(null);
     setDialog(null);
+  };
+
+  const confirmQuickAction = async () => {
+    if (!dialog || salvandoRegistro) return;
+
+    const tipo =
+      dialog === "rega" ? "rega" :
+      dialog === "adubacao" ? "adubacao" :
+      dialog === "foto" ? "foto" : "diagnostico";
+
+    const doseDescrita =
+      dialog === "adubacao"
+        ? descreverDose(produtoId, quantidade ? Number(quantidade) : null, unidade, formato)
+        : null;
+
+    const rotulo =
+      dialog === "rega" ? "Rega registrada" :
+      dialog === "adubacao" ? (doseDescrita ?? "Adubação registrada") :
+      dialog === "foto" ? "Foto adicionada" : "Observação registrada";
+
+    const texto = note ? (doseDescrita ? `${doseDescrita} — ${note}` : note) : rotulo;
+
+    // Logado: grava no diário de verdade. Visitante: fica só na tela (demonstração).
+    if (session) {
+      setSalvandoRegistro(true);
+      try {
+        let fotoUrl: string | undefined;
+        if (dialog === "foto" && fotoDiario) {
+          fotoUrl = await plantsService.uploadPhoto(fotoDiario);
+        }
+        await timelineService.add({
+          plantId: p.id,
+          type: tipo,
+          note: texto,
+          photo: fotoUrl,
+          productId: dialog === "adubacao" ? produtoId || undefined : undefined,
+          doseAmount: dialog === "adubacao" && quantidade ? Number(quantidade) : undefined,
+          doseUnit: dialog === "adubacao" ? unidade || undefined : undefined,
+          doseForm: dialog === "adubacao" ? formato || undefined : undefined,
+        });
+        await qc.invalidateQueries({ queryKey: ["timeline", p.id] });
+        await qc.invalidateQueries({ queryKey: ["plant", p.id] });
+        toast.success(rotulo);
+      } catch (err) {
+        toast.error("Não consegui registrar", {
+          description: err instanceof Error ? err.message : "Tente novamente.",
+        });
+        setSalvandoRegistro(false);
+        return;
+      }
+      setSalvandoRegistro(false);
+    } else {
+      addTimeline(tipo as TimelineEntry["type"], texto);
+      toast.success(rotulo);
+    }
+
+    limparDialog();
   };
 
   return (
@@ -301,7 +407,11 @@ function PlantDetail() {
               </div>
               <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Frequência</h3>
-                <p className="text-sm font-medium">Cuidado a cada {p.wateringFrequencyDays} dias</p>
+                <p className="text-sm font-medium">
+                  {p.wateringFrequencyDays
+                    ? `Cuidado a cada ${p.wateringFrequencyDays} dias`
+                    : "Frequência ainda não definida"}
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-1">Conforme espécie</p>
               </div>
             </div>
@@ -435,9 +545,152 @@ function PlantDetail() {
               {dialog === "obs" && "Registrar observação"}
             </DialogTitle>
             <DialogDescription>
-              Este registro é adicionado ao histórico desta planta (modo demonstrativo).
+              {session
+                ? "Este registro entra no histórico da sua planta."
+                : "Modo demonstrativo — entre na sua conta para guardar de verdade."}
             </DialogDescription>
           </DialogHeader>
+
+          {dialog === "adubacao" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>O que você aplicou?</Label>
+                <Select
+                  value={produtoId}
+                  onValueChange={(v) => {
+                    setProdutoId(v);
+                    const f = produtoPorId(v)?.formatos[0] ?? "";
+                    setFormato(f as FormatoProduto);
+                    setUnidade(f ? unidadesDoFormato(f as FormatoProduto)[0] : "");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha o produto (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUTOS.map((pr) => (
+                      <SelectItem key={pr.id} value={pr.id}>
+                        {pr.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {produtoId && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Formato</Label>
+                    <Select
+                      value={formato}
+                      onValueChange={(v) => {
+                        setFormato(v as FormatoProduto);
+                        setUnidade(unidadesDoFormato(v as FormatoProduto)[0]);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(produtoPorId(produtoId)?.formatos ?? []).map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {ROTULO_FORMATO[f]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dose-qtd">Quanto</Label>
+                      <Input
+                        id="dose-qtd"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        inputMode="decimal"
+                        value={quantidade}
+                        onChange={(e) => setQuantidade(e.target.value)}
+                        placeholder="Ex.: 10"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Medida</Label>
+                      <Select value={unidade} onValueChange={setUnidade}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(formato ? unidadesDoFormato(formato) : []).map((u) => (
+                            <SelectItem key={u} value={u}>
+                              {u}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {formato === "pronto_uso" && (
+                    <p className="text-xs text-muted-foreground">
+                      Pronto uso não se dilui. Vaso pequeno 5–7 borrifadas · médio 8–12 · grande 15–20.
+                    </p>
+                  )}
+                  {formato === "concentrado" && (
+                    <p className="text-xs text-muted-foreground">
+                      Concentrado dilui em água: 5 ml/L nas folhas (semanal) ou 10 ml/L no solo (a cada 15 dias).
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {dialog === "foto" && (
+            <div className="space-y-2">
+              <Label>Foto de hoje</Label>
+              <input
+                ref={fotoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => escolherFoto(e.target.files?.[0], e.currentTarget)}
+              />
+              {fotoDiario ? (
+                <div className="relative w-fit">
+                  <img
+                    src={fotoDiario}
+                    alt="Prévia"
+                    className="h-32 w-32 rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFotoDiario(null)}
+                    aria-label="Remover foto"
+                    className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-foreground text-background shadow"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={preparandoFoto}
+                  onClick={() => fotoInputRef.current?.click()}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  {preparandoFoto ? "Preparando…" : "Escolher foto"}
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Fotografe do mesmo ângulo das anteriores — é assim que a evolução fica visível.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="quick-note">Observação (opcional)</Label>
             <Textarea
@@ -448,10 +701,12 @@ function PlantDetail() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
+            <Button variant="outline" onClick={limparDialog} disabled={salvandoRegistro}>
               Cancelar
             </Button>
-            <Button onClick={confirmQuickAction}>Confirmar</Button>
+            <Button onClick={confirmQuickAction} disabled={salvandoRegistro}>
+              {salvandoRegistro ? "Salvando…" : "Confirmar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

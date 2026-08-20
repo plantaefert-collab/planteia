@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { Plus, Search, Sprout } from "lucide-react";
-import type { PlantStatus } from "@/lib/types";
+import type { Plant, PlantStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -29,12 +29,23 @@ function Plants() {
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("todas");
   const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
 
-  const filtered = (plants.data ?? []).filter((p) => {
-    if (filter !== "todas" && p.status !== filter) return false;
-    if (q && !`${p.nickname} ${p.species}`.toLowerCase().includes(q.toLowerCase()))
-      return false;
-    return true;
-  });
+  // Peso por urgência: a lista deve responder "o que precisa de mim agora?",
+  // e não ser apenas um álbum na ordem de cadastro.
+  const peso = (p: Plant) => {
+    const atrasada = p.nextCare?.whenLabel?.startsWith("atrasada") ? 0 : 1;
+    const porStatus = p.status === "atencao" ? 0 : p.status === "acompanhamento" ? 1 : 2;
+    const hoje = p.nextCare?.whenLabel === "hoje" ? 0 : 1;
+    return atrasada * 100 + porStatus * 10 + hoje;
+  };
+
+  const filtered = (plants.data ?? [])
+    .filter((p) => {
+      if (filter !== "todas" && p.status !== filter) return false;
+      if (q && !`${p.nickname} ${p.species}`.toLowerCase().includes(q.toLowerCase()))
+        return false;
+      return true;
+    })
+    .sort((a, b) => peso(a) - peso(b));
 
   return (
     <AppShell
