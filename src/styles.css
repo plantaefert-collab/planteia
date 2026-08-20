@@ -378,6 +378,17 @@ nav[aria-label="Navegação principal"] {
   }
 }
 
+/* Fileira de filtros que rola de lado: a barra de rolagem do desktop
+   corta a linha em duas e sugere um erro de layout. A borda cortada do
+   último item já diz que existe mais coisa. */
+@utility rolagem-discreta {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------
    M-005 — varredura do visor da câmera
 
