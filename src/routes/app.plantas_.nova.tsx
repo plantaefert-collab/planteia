@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { plantsService } from "@/lib/services";
+import { plantsService, carePlanService } from "@/lib/services";
+import { diagnosesDb } from "@/lib/plants-db";
+import { pendingDiagnosis, type DiagnosticoPendente } from "@/lib/pending-diagnosis";
 import { useAuth } from "@/lib/use-auth";
 
 export const Route = createFileRoute("/app/plantas_/nova")({
@@ -52,6 +54,17 @@ function NewPlant() {
   const [wateringDays, setWateringDays] = useState<string>("");
   const [potSize, setPotSize] = useState("");
 
+  // Diagnóstico feito antes do cadastro ("avaliar sem cadastro"): a foto entra
+  // pré-carregada e o plano é criado assim que a planta existir.
+  const [pendente, setPendente] = useState<DiagnosticoPendente | null>(null);
+  useEffect(() => {
+    const d = pendingDiagnosis.take();
+    if (d) {
+      setPendente(d);
+      if (d.photos?.[0]) setPhoto(d.photos[0]);
+    }
+  }, []);
+
   const progress = ((step + 1) / steps.length) * 100;
   const podeAvancar = step !== 0 || nickname.trim().length > 0;
 
@@ -62,7 +75,7 @@ function NewPlant() {
       if (photo) {
         photoUrl = await plantsService.uploadPhoto(photo);
       }
-      await plantsService.create({
+      const criada = await plantsService.create({
         nickname: nickname.trim(),
         species: species || undefined,
         photo: photoUrl,
@@ -72,8 +85,31 @@ function NewPlant() {
         wateringFrequencyDays: wateringDays ? Number(wateringDays) : undefined,
         acquiredAt: acquiredAt || undefined,
       });
+
+      // Veio de um diagnóstico: anexa o resultado à planta e já cria o plano.
+      if (pendente) {
+        try {
+          if (pendente.diagnosisRowId) {
+            await diagnosesDb.attachToPlant(pendente.diagnosisRowId, criada.id);
+          }
+          await carePlanService.createFromDiagnosis(
+            criada.id,
+            pendente.diagnosis,
+            pendente.diagnosisRowId,
+          );
+          toast.success("Planta cadastrada e plano criado!", {
+            description: "As tarefas e a reavaliação já estão no calendário.",
+          });
+        } catch {
+          toast.warning("Planta cadastrada", {
+            description: "Não consegui criar o plano agora — dá para refazer pelo diagnóstico.",
+          });
+        }
+      } else {
+        toast.success("Planta adicionada!", { description: "Ela já está salva na sua conta." });
+      }
+
       await qc.invalidateQueries({ queryKey: ["plants"] });
-      toast.success("Planta adicionada!", { description: "Ela já está salva na sua conta." });
       navigate({ to: "/app/plantas" });
     } catch (err) {
       toast.error("Não consegui salvar", {
@@ -118,6 +154,19 @@ function NewPlant() {
   return (
     <AppShell title="Nova planta">
       <div className="mx-auto max-w-lg space-y-6">
+        {pendente && (
+          <div className="flex items-start gap-3 rounded-2xl border border-leaf/20 bg-leaf-soft/40 p-4">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-leaf" />
+            <div className="text-sm">
+              <p className="font-medium text-leaf-dark">Diagnóstico guardado</p>
+              <p className="mt-0.5 text-muted-foreground">
+                “{pendente.diagnosis.mainSuspicion}” — a foto já veio junto. Ao terminar o
+                cadastro, o plano de cuidados é criado automaticamente.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div>
           <p className="text-xs text-muted-foreground">
             Passo {step + 1} de {steps.length} · {steps[step]}

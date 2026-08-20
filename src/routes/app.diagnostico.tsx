@@ -8,6 +8,8 @@ import { DiagnosisResult } from "@/components/DiagnosisResult";
 import type { Diagnosis, Plant, CarePlan } from "@/lib/types";
 import { diagnosisHistory, type PhotoDiagnosisHistoryEntry } from "@/lib/diagnosis-history";
 import { pendingCapture } from "@/lib/pending-capture";
+import { pendingDiagnosis } from "@/lib/pending-diagnosis";
+import { diagnosesService } from "@/lib/services";
 import { 
   Sparkles, 
   Loader2, 
@@ -110,6 +112,9 @@ function DiagnosisPage() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [result, setResult] = useState<Diagnosis | null>(null);
   const [isPlanAdded, setIsPlanAdded] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
+  // Id da linha em `diagnoses` depois de salvo (liga o plano ao diagnóstico).
+  const [diagnosisRowId, setDiagnosisRowId] = useState<string | null>(null);
   const [addedPlan, setAddedPlan] = useState<CarePlan | null>(null);
   const [analysisPhase, setAnalysisPhase] = useState<"upload" | "analyzing" | "finalizing" | "error">("upload");
   const [analysisProgress, setAnalysisProgress] = useState(0);
@@ -218,6 +223,23 @@ function DiagnosisPage() {
       setAnalysisPhase("finalizing");
       setAnalysisProgress(100);
       setResult(r);
+
+      // Logado: o diagnóstico e as fotos vão para o banco (o histórico local
+      // continua servindo a demonstração de quem não tem conta).
+      try {
+        const rowId = await diagnosesService.save({
+          plantId: _plant?.id,
+          photos: _photos,
+          symptom: _symptom,
+          objective: _objective,
+          answers: _answers,
+          diagnosis: r,
+        });
+        setDiagnosisRowId(rowId);
+      } catch {
+        // Falhar ao arquivar não pode esconder o diagnóstico do usuário.
+      }
+
       if (photos.length > 0) {
         try {
           diagnosisHistory.add({
@@ -284,18 +306,44 @@ function DiagnosisPage() {
   };
 
   const addToPlan = async () => {
-    if (!selected || !result) {
-      toast.error("Para salvar o plano, a planta precisa estar cadastrada.");
+    if (!result) return;
+
+    // Avaliou sem cadastrar: em vez de barrar, leva ao cadastro levando a foto
+    // e o diagnóstico junto — o plano é criado assim que a planta existir.
+    if (!selected) {
+      pendingDiagnosis.set({
+        photos,
+        symptom: symptomText,
+        objective,
+        answers,
+        diagnosis: result,
+        diagnosisRowId: diagnosisRowId ?? undefined,
+      });
+      toast.info("Vamos cadastrar esta planta", {
+        description: "A foto e o diagnóstico vão junto — o plano entra no fim.",
+      });
+      navigate({ to: "/app/plantas/nova" });
       return;
     }
-    
+
+    setSavingPlan(true);
     try {
-      const plan = await carePlanService.createFromDiagnosis(selected.id, result);
+      const plan = await carePlanService.createFromDiagnosis(
+        selected.id,
+        result,
+        diagnosisRowId ?? undefined,
+      );
       setAddedPlan(plan);
       setIsPlanAdded(true);
-      toast.success("Plano adicionado com sucesso!");
+      toast.success("Plano adicionado!", {
+        description: "As tarefas e a reavaliação já estão no calendário.",
+      });
     } catch (error) {
-      toast.error("Erro ao criar o plano.");
+      toast.error("Não consegui criar o plano", {
+        description: error instanceof Error ? error.message : "Tente novamente.",
+      });
+    } finally {
+      setSavingPlan(false);
     }
   };
 
@@ -802,8 +850,18 @@ function DiagnosisPage() {
 
                 
                 <div className="flex flex-col gap-3 pb-4">
-                  <Button size="lg" className="w-full shadow-lg shadow-leaf/20" onClick={addToPlan}>
-                    <Plus className="h-5 w-5 mr-2" /> Adicionar ao plano da planta
+                  <Button
+                    size="lg"
+                    className="w-full shadow-lg shadow-leaf/20"
+                    onClick={addToPlan}
+                    disabled={savingPlan}
+                  >
+                    {savingPlan ? (
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-5 w-5 mr-2" />
+                    )}
+                    {selected ? "Adicionar ao plano da planta" : "Cadastrar planta e salvar o plano"}
                   </Button>
                   <Button asChild variant="outline" size="lg" className="w-full">
                     <Link to="/app/jardineiro">

@@ -161,3 +161,189 @@ function paraTarefa(r: Record<string, any>): CareTask {
     origin: r.origin ?? undefined,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloco 3 — diagnósticos e planos de cuidado
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { Diagnosis, CarePlan, CareType } from "./types";
+
+/** Deduz o tipo de cuidado a partir do texto da ação sugerida pela IA. */
+function tipoDaAcao(texto: string): CareType {
+  const t = texto.toLowerCase();
+  if (/rega|regar|água|agua|molhar|encharcad/.test(t)) return "regar";
+  if (/adub|fertiliz|bokashi|nutri/.test(t)) return "adubar";
+  if (/pod|cortar|remover folha|remover parte/.test(t)) return "podar";
+  if (/praga|inseto|cochonilha|pulgão|pulgao|neem|fungo|calda/.test(t)) return "pragas";
+  if (/foto|fotograf|registr/.test(t)) return "fotografar";
+  return "substrato";
+}
+
+export type DadosDiagnostico = {
+  plantId?: string;
+  photos: string[];      // data URLs vindas da câmera
+  symptom?: string;
+  objective?: string;
+  answers?: Record<string, unknown>;
+  diagnosis: Diagnosis;
+};
+
+export const diagnosesDb = {
+  /**
+   * Salva o diagnóstico. As fotos vão para o armazenamento (guardar data URL
+   * na tabela inflaria o banco); no registro ficam apenas as URLs.
+   */
+  async create(dados: DadosDiagnostico): Promise<string> {
+    const userId = await usuarioAtual();
+    if (!userId) throw new Error("Entre na sua conta para salvar o diagnóstico.");
+
+    const urls: string[] = [];
+    for (const foto of dados.photos) {
+      if (foto.startsWith("data:image/")) {
+        try {
+          urls.push(await plantsDb.uploadPhoto(foto));
+        } catch {
+          // Uma foto que falha não pode impedir de salvar o diagnóstico.
+        }
+      } else if (foto) {
+        urls.push(foto);
+      }
+    }
+
+    const d = dados.diagnosis;
+    const { data, error } = await sbNovo
+      .from("diagnoses")
+      .insert({
+        user_id: userId,
+        plant_id: dados.plantId ?? null,
+        status: d.status,
+        main_suspicion: d.mainSuspicion,
+        confidence: d.confidence,
+        observed_signs: d.observedSigns ?? [],
+        other_possibilities: d.otherPossibilities ?? [],
+        immediate_actions: d.immediateActions ?? [],
+        avoid: d.avoid ?? [],
+        urgency_signs: d.urgencySigns ?? [],
+        what_to_observe: d.whatToObserve ?? [],
+        improvement_signs: d.improvementSigns ?? [],
+        care_timeline: d.careTimeline ?? [],
+        reevaluate_in_days: d.reevaluateInDays ?? 7,
+        photos: urls,
+        symptom: dados.symptom ?? null,
+        objective: dados.objective ?? null,
+        answers: dados.answers ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  },
+
+  /** Liga um diagnóstico feito "sem cadastro" à planta recém-criada. */
+  async attachToPlant(rowId: string, plantId: string): Promise<void> {
+    const { error } = await sbNovo
+      .from("diagnoses")
+      .update({ plant_id: plantId })
+      .eq("id", rowId);
+    if (error) throw error;
+  },
+
+  async listByPlant(plantId: string) {
+    const { data, error } = await sbNovo
+      .from("diagnoses")
+      .select("*")
+      .eq("plant_id", plantId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+};
+
+export const carePlansDb = {
+  /**
+   * Cria o plano a partir do diagnóstico: as ações imediatas viram tarefas
+   * para hoje, e a reavaliação vira uma tarefa agendada para o prazo indicado
+   * pela IA. Também registra o diagnóstico no diário da planta.
+   */
+  async createFromDiagnosis(
+    plantId: string,
+    diagnosis: Diagnosis,
+    diagnosisRowId?: string,
+  ): Promise<CarePlan> {
+    const userId = await usuarioAtual();
+    if (!userId) throw new Error("Entre na sua conta para salvar o plano.");
+
+    const prioridade = diagnosis.status === "atencao" ? "alta" : "media";
+    const dias = diagnosis.reevaluateInDays ?? 7;
+    const reavaliarEm = new Date(Date.now() + dias * 86400000).toISOString();
+
+    const { data: plano, error: erroPlano } = await sbNovo
+      .from("care_plans")
+      .insert({
+        user_id: userId,
+        plant_id: plantId,
+        diagnosis_id: diagnosisRowId ?? null,
+        name: `Recuperação: ${diagnosis.mainSuspicion}`,
+        status: "em_andamento",
+        priority: prioridade,
+        avoid: diagnosis.avoid ?? [],
+        next_reevaluation_at: reavaliarEm,
+      })
+      .select("*")
+      .single();
+    if (erroPlano) throw erroPlano;
+
+    const hoje = new Date().toISOString();
+    const tarefas = (diagnosis.immediateActions ?? []).map((acao) => ({
+      user_id: userId,
+      plant_id: plantId,
+      care_plan_id: plano.id,
+      type: tipoDaAcao(acao),
+      title: acao,
+      date: hoje,
+      priority: prioridade,
+      origin: "diagnostico",
+    }));
+
+    // A reavaliação fecha o ciclo: sem ela o plano não tem fim.
+    tarefas.push({
+      user_id: userId,
+      plant_id: plantId,
+      care_plan_id: plano.id,
+      type: "fotografar",
+      title: `Reavaliar com nova foto (${dias} dias)`,
+      date: reavaliarEm,
+      priority: prioridade,
+      origin: "diagnostico",
+    });
+
+    const { data: criadas, error: erroTarefas } = await sbNovo
+      .from("care_tasks")
+      .insert(tarefas)
+      .select("*");
+    if (erroTarefas) throw erroTarefas;
+
+    // Marca no diário que houve um diagnóstico.
+    await sbNovo.from("timeline_entries").insert({
+      user_id: userId,
+      plant_id: plantId,
+      type: "diagnostico",
+      date: hoje,
+      note: diagnosis.mainSuspicion,
+      photo: null,
+    });
+
+    return {
+      id: plano.id,
+      plantId,
+      diagnosisId: diagnosisRowId ?? diagnosis.id,
+      name: plano.name,
+      status: "em_andamento",
+      priority: prioridade,
+      createdAt: plano.created_at,
+      nextReevaluationAt: reavaliarEm,
+      tasks: (criadas ?? []).map(paraTarefa),
+      avoid: diagnosis.avoid ?? [],
+    };
+  },
+};

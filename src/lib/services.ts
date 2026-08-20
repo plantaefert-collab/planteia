@@ -1,6 +1,10 @@
 import type { Plant, CareTask, Diagnosis, Product, ChatMessage, CarePlan } from "./types";
 import * as mockData from "./mock-data";
-import { plantsDb, tasksDb, timelineDb, usuarioAtual, type NovaPlanta } from "./plants-db";
+import {
+  plantsDb, tasksDb, timelineDb, usuarioAtual,
+  diagnosesDb, carePlansDb,
+  type NovaPlanta, type DadosDiagnostico,
+} from "./plants-db";
 import {
   mockPlants,
   mockCareTasks,
@@ -152,8 +156,24 @@ export const diagnosisService = {
   },
 };
 
+export const diagnosesService = {
+  /** Salva o diagnóstico no banco. Só faz sentido com sessão. */
+  async save(dados: DadosDiagnostico): Promise<string | null> {
+    if (!(await logado())) return null;
+    return diagnosesDb.create(dados);
+  },
+};
+
 export const carePlanService = {
-  async createFromDiagnosis(plantId: string, diagnosis: Diagnosis): Promise<CarePlan> {
+  async createFromDiagnosis(
+    plantId: string,
+    diagnosis: Diagnosis,
+    diagnosisRowId?: string,
+  ): Promise<CarePlan> {
+    // Logado: plano e tarefas gravados de verdade (inclusive a reavaliação).
+    if (await logado()) {
+      return carePlansDb.createFromDiagnosis(plantId, diagnosis, diagnosisRowId);
+    }
     await wait(500);
     const scenario = Object.values(mockData.diagnosisScenarios).find(s => s.title === diagnosis.mainSuspicion) || mockData.diagnosisScenarios.investigacao;
     

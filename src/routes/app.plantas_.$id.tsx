@@ -301,7 +301,11 @@ function PlantDetail() {
               </div>
               <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Frequência</h3>
-                <p className="text-sm font-medium">Cuidado a cada {p.wateringFrequencyDays} dias</p>
+                <p className="text-sm font-medium">
+                  {p.wateringFrequencyDays
+                    ? `Cuidado a cada ${p.wateringFrequencyDays} dias`
+                    : "Frequência ainda não definida"}
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-1">Conforme espécie</p>
               </div>
             </div>
