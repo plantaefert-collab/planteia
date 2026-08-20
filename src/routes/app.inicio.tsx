@@ -1,127 +1,134 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { plantsService, tasksService } from "@/lib/services";
+import { FocoDoDia } from "@/components/inicio/FocoDoDia";
+import { MosaicoDoJardim } from "@/components/inicio/MosaicoDoJardim";
 import { CareTaskCard } from "@/components/CareTaskCard";
-import { PlantCard } from "@/components/PlantCard";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, Camera, Sparkles, ChevronRight } from "lucide-react";
+import { plantsService, tasksService } from "@/lib/services";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Camera, Sprout } from "lucide-react";
 
 export const Route = createFileRoute("/app/inicio")({
   head: () => ({ meta: [{ title: "Início · Plantae AI" }] }),
   component: Home,
 });
 
-function Home() {
-  const plants = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
-  const tasks = useQuery({ queryKey: ["tasks"], queryFn: tasksService.list });
+const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-  const todayTasks = (tasks.data ?? []).filter((t) => !t.done).slice(0, 3);
-  const alertPlant = (plants.data ?? []).find((p) => p.status === "atencao");
+/**
+ * Início — direção "A com B", aprovada por Felipe em 20/08/2026.
+ *
+ * Havendo tarefa, a tela é uma planta em foco com uma ação dominante; o
+ * resto do dia fica em linhas resolvíveis ali mesmo. Não havendo, ela vira
+ * o mosaico do jardim.
+ *
+ * O motivo do segundo estado: a versão anterior repetia o Calendário e a
+ * aba Plantas, e sem tarefa não sobrava nada. Quem tem poucas plantas via
+ * tela vazia quase sempre e aprendia que o app não tem o que mostrar.
+ */
+function Home() {
+  const qc = useQueryClient();
+  const plantas = useQuery({ queryKey: ["plants"], queryFn: plantsService.list });
+  const tarefas = useQuery({ queryKey: ["tasks"], queryFn: tasksService.list });
+  const [concluindo, setConcluindo] = useState<string | null>(null);
+
+  const concluir = useMutation({
+    mutationFn: (id: string) => tasksService.toggle(id, true),
+    onMutate: (id: string) => setConcluindo(id),
+    onSettled: () => {
+      setConcluindo(null);
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const carregando = plantas.isLoading || tarefas.isLoading;
+  const pendentes = (tarefas.data ?? []).filter((t) => !t.done);
+  const foco = pendentes[0];
+  const demais = pendentes.slice(1, 4);
+  const plantaDoFoco = (plantas.data ?? []).find((p) => p.id === foco?.plantId);
+
+  const hoje = new Date();
+  const dataLabel = `${DIAS[hoje.getDay()]} · ${hoje.getDate()} ${MESES[hoje.getMonth()]}`;
+
+  const titulo = carregando
+    ? ""
+    : pendentes.length === 0
+      ? "Nada pendente hoje"
+      : pendentes.length === 1
+        ? "Uma planta pede você"
+        : `${pendentes.length} plantas pedem você`;
 
   return (
     <AppShell title="Início">
-      <div className="space-y-6">
-        <section>
-          <p className="text-sm text-muted-foreground">Olá, Maria 👋</p>
-          <h2 className="mt-1 font-display text-2xl font-semibold">Vamos cuidar do seu jardim?</h2>
-        </section>
+      <div className="space-y-4">
+        <header>
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            {dataLabel}
+          </p>
+          {carregando ? (
+            <Skeleton className="mt-1.5 h-8 w-52" />
+          ) : (
+            <h2 className="mt-0.5 font-display text-2xl font-semibold leading-tight">{titulo}</h2>
+          )}
+        </header>
 
-        {alertPlant && (
-          <Link
-            to="/app/plantas/$id"
-            params={{ id: alertPlant.id }}
-            className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning-soft p-4 shadow-sm"
-          >
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-semibold">{alertPlant.nickname}</p>
-                <StatusBadge status={alertPlant.status} />
-              </div>
-              <p className="truncate text-xs text-foreground/80">
-                {alertPlant.nextCare?.label} · {alertPlant.nextCare?.whenLabel}
-              </p>
-            </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Link>
+        {carregando && <Skeleton className="h-[300px] w-full rounded-[18px]" />}
+
+        {!carregando && foco && (
+          <>
+            <FocoDoDia
+              tarefa={foco}
+              planta={plantaDoFoco}
+              concluindo={concluindo === foco.id}
+              onConcluir={() => concluir.mutate(foco.id)}
+            />
+            {demais.length > 0 && (
+              <section className="space-y-2 pt-1">
+                <h3 className="text-sm font-semibold">Também hoje</h3>
+                {demais.map((t) => (
+                  <CareTaskCard key={t.id} task={t} />
+                ))}
+              </section>
+            )}
+          </>
         )}
 
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-semibold">Cuidados de hoje</h3>
-            <Link to="/app/calendario" className="tap-safe text-xs font-medium text-leaf">
-              Ver tudo
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {tasks.isLoading &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-2xl" />
-              ))}
-            {todayTasks.map((t) => (
-              <CareTaskCard key={t.id} task={t} />
-            ))}
-          </div>
-        </section>
+        {!carregando && !foco && (plantas.data?.length ?? 0) > 0 && (
+          <>
+            <p className="-mt-1 text-sm text-muted-foreground">
+              Seu jardim está em dia. Uma boa hora para só olhar.
+            </p>
+            <MosaicoDoJardim plantas={plantas.data ?? []} />
+          </>
+        )}
 
-        <section className="grid gap-3 sm:grid-cols-2">
-          <Link
-            to="/app/diagnostico"
-            className="flex items-center gap-3 rounded-2xl border border-border bg-gradient-to-br from-leaf-soft to-card p-4 shadow-sm"
-          >
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-leaf text-primary-foreground">
-              <Camera className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Diagnóstico rápido</p>
-              <p className="text-xs text-muted-foreground">Envie fotos e receba um plano.</p>
-            </div>
-          </Link>
-          <Link
-            to="/app/jardineiro"
-            className="flex items-center gap-3 rounded-2xl border border-border bg-gradient-to-br from-bloom-soft to-card p-4 shadow-sm"
-          >
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Jardineiro IA</p>
-              <p className="text-xs text-muted-foreground">Tire suas dúvidas por chat.</p>
-            </div>
-          </Link>
-        </section>
-
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-semibold">Suas plantas</h3>
-            <Link to="/app/plantas" className="tap-safe text-xs font-medium text-leaf">
-              Ver todas
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {plants.isLoading &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-64 w-full rounded-2xl" />
-              ))}
-            {(plants.data ?? []).slice(0, 3).map((p) => (
-              <PlantCard key={p.id} plant={p} />
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-leaf">Dica do dia</p>
-          <p className="mt-1 text-sm text-foreground/90">
-            Orquídeas Phalaenopsis gostam de luz indireta clara. Se as folhas estiverem muito verdes
-            e alongadas, pode estar faltando luz.
-          </p>
-        </section>
+        {!carregando && (plantas.data?.length ?? 0) === 0 && <PrimeiraPlanta />}
       </div>
     </AppShell>
+  );
+}
+
+/** Estado inicial: sem plantas não há tarefa nem jardim, e a tela precisa
+ *  oferecer o primeiro passo em vez de ficar vazia. */
+function PrimeiraPlanta() {
+  return (
+    <div className="rounded-[18px] border border-border bg-card p-6 text-center shadow-sm">
+      <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-leaf-soft">
+        <Sprout className="h-7 w-7 text-leaf" />
+      </span>
+      <h3 className="font-display text-lg font-semibold">Comece pela primeira</h3>
+      <p className="mx-auto mt-1 max-w-[34ch] text-sm text-muted-foreground">
+        Cadastre uma planta e o Plantae passa a lembrar você do que ela precisa.
+      </p>
+      <Link
+        to="/app/plantas/nova"
+        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground"
+      >
+        <Camera className="h-4 w-4" />
+        Cadastrar planta
+      </Link>
+    </div>
   );
 }
