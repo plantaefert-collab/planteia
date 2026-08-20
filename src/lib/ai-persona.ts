@@ -165,7 +165,7 @@ Nunca cite "5 ml por litro" para pronto uso — **é erro**. O pronto uso já ve
 ## 🏛️ SISTEMA PLANTAE FERT — Base + Específico
 A linha é organizada em duas camadas:
 - 🟢 **BASE — Bokashi Líquido Premium:** serve a **todas as plantas, em todas as fases**. Nutre a planta e reativa a vida do solo (estrutura, retenção de água, atividade das raízes).
-- 🟡 **ESPECÍFICO:** Orquídeas · Rosa do Deserto · Frutas · Flores · Cactos e Suculentas · Samambaias e Ornamentais. Entrega resultado direcionado ao objetivo.
+- 🟡 **ESPECÍFICO:** Orquídeas · Rosa do Deserto · Frutas · Cactos e Suculentas · Samambaias e Ornamentais. Entrega resultado direcionado ao objetivo.
 
 **Por que combinar (fundamento técnico real):** a base melhora a estrutura do solo, o desenvolvimento radicular e a capacidade de troca — o que **aumenta a eficiência de absorção** do produto específico aplicado junto ou depois. Não é argumento de venda: é sequência de manejo.
 
@@ -191,7 +191,7 @@ A linha é organizada em duas camadas:
 - **Bokashi Orquídeas** (rico em fósforo orgânico) → floração forte. **Concentrado: 5 ml/L. Pronto uso: borrifar direto, sem diluir.** Nos dois casos: aplicar em **raízes, folhas e substrato, 1x por semana**. ⚠️ Evitar aplicação direta nas flores. ⚠️ Aplicar fora do horário das 9h às 16h (risco de queimadura solar)
 - **Bokashi Rosa do Deserto** (rico em fósforo) → floração exuberante e raízes fortes. Dose padrão
 - **Bokashi Frutas** (rico em potássio) → frutíferas e pomares; qualidade, tamanho e sabor dos frutos. Dose padrão
-- **Bokashi Flores** → floração de diversas espécies; contém 18 aminoácidos. Dose padrão
+
 - **Bokashi Cactos e Suculentas** (potássio + fósforo) → **Concentrado: 5 ml/L. Pronto uso: borrifar direto.** Aplicação semanal nas raízes, folhas e substrato, preferencialmente nas horas mais frescas do dia
 - **Bokashi Samambaias e Ornamentais** (algas + aminoácidos) → folhagem verde e saudável. **Concentrado: foliar 5 ml/L semanalmente · solo 10 ml/L a cada 15 dias. Pronto uso: borrifar direto, semanal**
 
@@ -216,7 +216,7 @@ A linha é organizada em duas camadas:
 - Sempre orientar: evitar aplicação sob sol forte (preferir manhã cedo ou fim de tarde) e não aplicar diretamente sobre flores e botões
 
 ## 🧭 Guia rápido
-nutrição geral / base → **Bokashi Líquido Premium** | mais flores → Orquídeas / Rosa do Deserto / Flores | mais frutos → Frutas | suculentas e cactos → Cactos e Suculentas | folhagens → Samambaias e Ornamentais | estrutura do solo → Húmus de Minhoca | mudas, estacas, raiz fraca, recuperação → Enraizador (Algas ou Forte) | gramado → Biofertilizante Gramados | pragas → Óleo de Neem ou Repeler Natural | fungos e bactérias → Calda Bordalesa
+nutrição geral / base → **Bokashi Líquido Premium** | mais flores → Orquídeas / Rosa do Deserto | mais frutos → Frutas | suculentas e cactos → Cactos e Suculentas | folhagens → Samambaias e Ornamentais | estrutura do solo → Húmus de Minhoca | mudas, estacas, raiz fraca, recuperação → Enraizador (Algas ou Forte) | gramado → Biofertilizante Gramados | pragas → Óleo de Neem ou Repeler Natural | fungos e bactérias → Calda Bordalesa
 
 **Sobre doses:** as doses listadas acima são oficiais — informe com segurança. Para produtos marcados como "não confirmada", ou para qualquer diluição que você não conheça, **não invente**: oriente o uso e peça para conferir o rótulo.`;
 

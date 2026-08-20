@@ -230,6 +230,123 @@ o funcionamento normal. Apodrecimento começa justamente ali quando há excesso.
 direto para florir.
 **Sinais:** base amolecida ou escura é apodrecimento e pede ação imediata. Perda de
 folha no frio é normal, não doença.`,
+
+  jiboia: `# Ficha: jiboia (Epipremnum aureum)
+**Ama:** luz clara indireta, secar um pouco entre regas, algo para trepar ou de onde pender.
+**Não tolera:** substrato encharcado, sol direto forte.
+**Erro mais comum:** regar mais quando a folha amarela — em jiboia, amarelo costuma ser
+água DEMAIS, não de menos.
+**O porquê:** é trepadeira de floresta tropical: sobe em tronco atrás da luz e vive num
+chão que molha e escorre. Por isso aguenta sombra e não aguenta pé n'água.
+**Dentro de casa:** a mais tolerante de todas — funciona longe da janela, em canto com
+claridade. Quanto menos luz, mais lisa e verde a folha fica.
+**Sinais:** variegação sumindo (folha ficando toda verde) é falta de luz; caule comprido
+com folhas espaçadas, idem. Ponta marrom seca é ar seco.
+**Atenção:** tóxica se ingerida — vale saber em casa com pet ou criança pequena.`,
+
+  espada_sao_jorge: `# Ficha: espada de São Jorge (Dracaena trifasciata)
+**Ama:** ser esquecida. Qualquer nível de luz, substrato secando por completo.
+**Não tolera:** excesso de água e frio com substrato úmido.
+**Erro mais comum:** regar como se fosse planta comum. Ela morre muito mais por água que
+por descuido.
+**O porquê:** é suculenta de folha, africana, adaptada a seca longa — guarda água na
+própria folha. Regar semanalmente é encher um reservatório que já está cheio.
+**Dentro de casa:** vai bem até em canto escuro, só cresce mais devagar. Aceita janela
+norte também.
+**Sinais:** folha amolecendo e caindo pela BASE é apodrecimento por água. Ponta seca
+isolada é normal. No frio, espace ainda mais a rega.`,
+
+  costela_adao: `# Ficha: costela de Adão (Monstera deliciosa)
+**Ama:** luz indireta forte, ar úmido, um tutor para subir.
+**Não tolera:** sol direto na folha, substrato encharcado.
+**Erro mais comum:** achar que folha sem recorte é falta de adubo — quase sempre é falta
+de luz ou planta ainda jovem.
+**O porquê:** os furos e recortes não são enfeite: deixam a luz passar para as folhas de
+baixo e a chuva e o vento atravessarem sem rasgar a folha, lá no alto da floresta. Folha
+nova em luz fraca sai inteira porque não vale o investimento.
+**Dentro de casa:** perto de janela com luz filtrada — cortina fina resolve. Longe do sol
+da tarde.
+**Sinais:** pontas e bordas marrons secas indicam ar seco; folha amarela em várias ao
+mesmo tempo, com substrato úmido, é excesso de água. Raiz aérea é normal — pode guiar
+para o tutor ou para o vaso, não precisa cortar.
+**Atenção:** tóxica se ingerida.`,
+
+  anturio: `# Ficha: antúrio (Anthurium)
+**Ama:** luz indireta clara, ar úmido, substrato aerado que não empapa.
+**Não tolera:** sol direto, água parada no prato, frio.
+**Erro mais comum:** tratar como planta de terra comum — a raiz sufoca. E regar no centro
+da planta, que apodrece a base.
+**O porquê:** na natureza cresce agarrado a tronco, com raiz exposta ao ar, como a
+orquídea. Quer substrato solto, não terra compactada.
+**Curiosidade que explica o cuidado:** aquele "coração vermelho" não é flor, é uma folha
+modificada (espata) — a flor de verdade é a espiga do meio. Por isso ele dura semanas:
+manter uma folha colorida custa menos que manter uma flor.
+**Dentro de casa:** luz indireta boa. Banheiro com janela é excelente pela umidade.
+**Sinais:** folhas amarelas = excesso de água; não florir = pouca luz; pontas marrons = ar seco.`,
+
+  lirio_da_paz: `# Ficha: lírio-da-paz (Spathiphyllum)
+**Ama:** sombra luminosa, substrato levemente úmido, ar úmido.
+**Não tolera:** sol direto, secar por completo, água muito dura.
+**Erro mais comum:** entrar em pânico quando ele murcha — e passar a regar demais.
+**O porquê:** é a planta que avisa. Ela murcha de forma dramática quando tem sede e volta
+ao normal em poucas horas depois de regada. Use isso como relógio, não como emergência:
+regue quando começar a bambear, e você quase nunca vai errar.
+**Dentro de casa:** aguenta cantos de pouca luz, mas só floresce com boa claridade
+indireta. Se não floresce, o problema quase sempre é luz.
+**Sinais:** pontas marrons secas costumam ser ar seco ou sensibilidade ao cloro da água —
+deixar a água descansar algumas horas ajuda.
+**Atenção:** tóxica se ingerida.`,
+
+  zamioculca: `# Ficha: zamioculca (Zamioculcas zamiifolia)
+**Ama:** abandono, pouca luz, substrato secando por inteiro.
+**Não tolera:** rega frequente. É a causa quase única de morte dela.
+**Erro mais comum:** regar toda semana.
+**O porquê:** tem um rizoma grosso embaixo da terra que é um tanque de água, e vem de
+região africana com seca sazonal. Ela foi feita para atravessar meses secos — o que ela
+não sabe fazer é lidar com água constante.
+**Dentro de casa:** praticamente qualquer lugar, inclusive baixa luz. Cresce devagar, e
+isso é normal, não é doença.
+**Sinais:** caule amarelando e amolecendo pela base é o rizoma apodrecendo — pare a rega
+imediatamente e verifique. Folha caindo amarela uma a uma, devagar, pode ser só idade.
+**Atenção:** tóxica se ingerida.`,
+
+  begonia: `# Ficha: begônias
+**Ama:** luz indireta, ar úmido, substrato leve que drena bem.
+**Não tolera:** folha molhada, sol direto, encharcamento.
+**Erro mais comum:** borrifar as folhas para "umidificar". Em begônia isso é convite a fungo.
+**O porquê:** muitas begônias têm folha aveludada, com pelos finos que seguram a gota
+d'água. A água parada na superfície da folha vira porta de entrada para fungo.
+Para umidade, aumente a do AR — agrupando plantas ou com um prato de água por perto —,
+nunca molhando a folha.
+**Dentro de casa:** janela leste ou sul, com claridade e sem sol direto.
+**Sinais:** pó branco-acinzentado nas folhas é oídio, o fungo mais comum nelas — melhore a
+ventilação e não molhe as folhas.`,
+
+  violeta: `# Ficha: violeta africana (Saintpaulia)
+**Ama:** luz clara indireta, temperatura estável, rega por baixo.
+**Não tolera:** água na folha, sol direto, frio.
+**Erro mais comum:** regar por cima. Aparecem manchas claras e a folha apodrece.
+**O porquê:** a folha é coberta de pelinhos que prendem a gota. A gota funciona como lente
+sob a luz e queima, e a água parada entre os pelos apodrece.
+**Como regar:** coloque a água no pratinho e deixe ela puxar pela raiz por uns 20 minutos;
+depois descarte o que sobrou.
+**Dentro de casa:** perto de janela clara, sem sol batendo. É a planta que mais gosta de
+luz constante e local fixo.
+**Sinais:** não florir quase sempre é pouca luz; manchas claras na folha são água fria ou
+sol direto.`,
+
+  bromelia: `# Ficha: bromélias
+**Ama:** luz indireta clara, água no copo central, substrato apenas úmido.
+**Não tolera:** substrato encharcado, sol forte direto.
+**Erro mais comum:** regar só a terra, como planta comum — e assustar-se quando a planta
+morre depois de florir.
+**O porquê:** a roseta de folhas forma um copo que é o reservatório dela; na natureza vive
+presa em árvore e bebe da chuva que se acumula ali. Mantenha o copo com água limpa e
+renove de vez em quando para não virar criadouro de mosquito.
+**Curiosidade que explica o cuidado:** a bromélia floresce UMA vez e depois a roseta-mãe
+morre devagar — isso é o ciclo normal, não doença. Antes de morrer ela produz filhotes na
+base; separe-os quando estiverem com cerca de um terço do tamanho da mãe.
+**Dentro de casa:** luz clara indireta, longe do sol direto.`,
 };
 
 /** Palavras que identificam a família a partir do que a pessoa escreveu. */
@@ -238,9 +355,18 @@ const PISTAS: [string, RegExp][] = [
   ["rosa_do_deserto", /rosa[- ]do[- ]deserto|adenium/i],
   ["cacto", /cacto|cactus|mandacaru/i],
   ["suculenta", /suculenta|echeveria|jade|crassula|sedum/i],
-  ["samambaia", /samambaia|avenca|folhagem|costela[- ]de[- ]ad|jiboia|antúrio|anturio|peperomia/i],
+  ["samambaia", /samambaia|avenca|peperomia|maranta|pacov[áa]|folhagem/i],
   ["frutifera", /frut[ií]fera|limoeiro|lim[ãa]o|laranj|abacate|goiab|manga|maracuj|acerola|pitaia|romã|roma\b/i],
   ["gramado", /gramado|grama\b|esmeralda|s[ãa]o carlos|zoysia/i],
+  ["espada_sao_jorge", /espada[- ]de[- ]s[ãa]o[- ]jorge|lan[çc]a[- ]de[- ]s[ãa]o[- ]jorge|sansevieria|dracaena trifasciata/i],
+  ["costela_adao", /costela[- ]de[- ]ad[ãa]o|monstera/i],
+  ["anturio", /ant[úu]rio|anthurium/i],
+  ["lirio_da_paz", /l[íi]rio[- ]da[- ]paz|spathiphyllum|espatifilo/i],
+  ["zamioculca", /zamioculca|zamioculcas|zz\b/i],
+  ["begonia", /beg[ôo]nia|begonia/i],
+  ["violeta", /violeta|saintpaulia/i],
+  ["bromelia", /brom[ée]lia|guzmania|neoregelia/i],
+  ["jiboia", /jib[óo]ia|jiboia|epipremnum|pothos/i],
 ];
 
 /**
