@@ -24,6 +24,7 @@ import { gerarIcs, baixarIcs } from "@/lib/calendario-ics";
 import { CalendarPlus } from "lucide-react";
 import type { CareTask } from "@/lib/types";
 import { toast } from "sonner";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/app/calendario")({
   head: () => ({ meta: [{ title: "Calendário · Plantae AI" }] }),
@@ -120,12 +121,18 @@ function CalendarPage() {
 
   return (
     <AppShell title="Calendário">
-      <div className="grid gap-5 md:grid-cols-[auto_1fr]">
-        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-          <CalendarUI mode="single" selected={date} onSelect={setDate} />
+      {/* min-w-0: sem isso o item da grade não encolhe abaixo do conteúdo, e a
+          tabela do calendário (que não encolhe) empurra a página inteira para o
+          lado. overflow-x-auto deixa o calendário rolar sozinho se ainda faltar
+          espaço, em vez de arrastar a tela junto. */}
+      <div className="grid min-w-0 gap-5 md:grid-cols-[auto_1fr]">
+        <div className="min-w-0 overflow-x-auto rounded-2xl border border-border bg-card p-3 shadow-sm">
+          {/* locale fixo: sem ele o servidor formata em en-US e o cliente em
+              pt-BR, e o React acusa divergência de hidratação a cada carga. */}
+          <CalendarUI mode="single" selected={date} onSelect={setDate} locale={ptBR} />
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <Select value={plantFilter} onValueChange={setPlantFilter}>
               <SelectTrigger className="w-40">
