@@ -256,3 +256,12 @@ export function fichaDaEspecie(...textos: (string | null | undefined)[]): string
   }
   return "";
 }
+
+/** Chaves válidas de família — a identificação por foto devolve uma destas
+ *  para fazer a ponte com a ficha correspondente. */
+export const FAMILIAS = Object.keys(FICHAS);
+
+/** Ficha a partir da chave de família (ex.: a que a identificação devolveu). */
+export function fichaDaFamilia(familia?: string | null): string {
+  return familia ? (FICHAS[familia] ?? "") : "";
+}
