@@ -21,6 +21,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  PRODUTOS, unidadesDoFormato, ROTULO_FORMATO, descreverDose,
+  produtoPorId, type FormatoProduto,
+} from "@/lib/produtos";
+import { useAuth } from "@/lib/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { CareTaskCard } from "@/components/CareTaskCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -100,6 +110,14 @@ function PlantDetail() {
     null,
   );
   const [note, setNote] = useState("");
+  // O que foi aplicado (só para adubação) — é isto que torna "adubei" consultável.
+  const [produtoId, setProdutoId] = useState<string>("");
+  const [formato, setFormato] = useState<FormatoProduto | "">("");
+  const [quantidade, setQuantidade] = useState<string>("");
+  const [unidade, setUnidade] = useState<string>("");
+  const [salvandoRegistro, setSalvandoRegistro] = useState(false);
+  const { session } = useAuth();
+  const qc = useQueryClient();
 
   const plant = useQuery({
     queryKey: ["plant", id],
@@ -200,23 +218,65 @@ function PlantDetail() {
     setExtraTimeline((prev) => [entry, ...prev]);
   };
 
-  const confirmQuickAction = () => {
-    if (!dialog) return;
-    if (dialog === "rega") {
-      addTimeline("rega", note || "Rega registrada");
-      toast.success("Rega registrada");
-    } else if (dialog === "adubacao") {
-      addTimeline("adubacao", note || "Adubação registrada");
-      toast.success("Adubação registrada");
-    } else if (dialog === "foto") {
-      addTimeline("foto", note || "Foto adicionada (demonstrativo)");
-      toast.success("Foto adicionada");
-    } else if (dialog === "obs") {
-      addTimeline("diagnostico", note || "Observação registrada");
-      toast.success("Observação registrada");
-    }
+  const limparDialog = () => {
     setNote("");
+    setProdutoId("");
+    setFormato("");
+    setQuantidade("");
+    setUnidade("");
     setDialog(null);
+  };
+
+  const confirmQuickAction = async () => {
+    if (!dialog || salvandoRegistro) return;
+
+    const tipo =
+      dialog === "rega" ? "rega" :
+      dialog === "adubacao" ? "adubacao" :
+      dialog === "foto" ? "foto" : "diagnostico";
+
+    const doseDescrita =
+      dialog === "adubacao"
+        ? descreverDose(produtoId, quantidade ? Number(quantidade) : null, unidade, formato)
+        : null;
+
+    const rotulo =
+      dialog === "rega" ? "Rega registrada" :
+      dialog === "adubacao" ? (doseDescrita ?? "Adubação registrada") :
+      dialog === "foto" ? "Foto adicionada" : "Observação registrada";
+
+    const texto = note ? (doseDescrita ? `${doseDescrita} — ${note}` : note) : rotulo;
+
+    // Logado: grava no diário de verdade. Visitante: fica só na tela (demonstração).
+    if (session) {
+      setSalvandoRegistro(true);
+      try {
+        await timelineService.add({
+          plantId: p.id,
+          type: tipo,
+          note: texto,
+          productId: dialog === "adubacao" ? produtoId || undefined : undefined,
+          doseAmount: dialog === "adubacao" && quantidade ? Number(quantidade) : undefined,
+          doseUnit: dialog === "adubacao" ? unidade || undefined : undefined,
+          doseForm: dialog === "adubacao" ? formato || undefined : undefined,
+        });
+        await qc.invalidateQueries({ queryKey: ["timeline", p.id] });
+        await qc.invalidateQueries({ queryKey: ["plant", p.id] });
+        toast.success(rotulo);
+      } catch (err) {
+        toast.error("Não consegui registrar", {
+          description: err instanceof Error ? err.message : "Tente novamente.",
+        });
+        setSalvandoRegistro(false);
+        return;
+      }
+      setSalvandoRegistro(false);
+    } else {
+      addTimeline(tipo as TimelineEntry["type"], texto);
+      toast.success(rotulo);
+    }
+
+    limparDialog();
   };
 
   return (
@@ -439,9 +499,108 @@ function PlantDetail() {
               {dialog === "obs" && "Registrar observação"}
             </DialogTitle>
             <DialogDescription>
-              Este registro é adicionado ao histórico desta planta (modo demonstrativo).
+              {session
+                ? "Este registro entra no histórico da sua planta."
+                : "Modo demonstrativo — entre na sua conta para guardar de verdade."}
             </DialogDescription>
           </DialogHeader>
+
+          {dialog === "adubacao" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>O que você aplicou?</Label>
+                <Select
+                  value={produtoId}
+                  onValueChange={(v) => {
+                    setProdutoId(v);
+                    const f = produtoPorId(v)?.formatos[0] ?? "";
+                    setFormato(f as FormatoProduto);
+                    setUnidade(f ? unidadesDoFormato(f as FormatoProduto)[0] : "");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha o produto (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUTOS.map((pr) => (
+                      <SelectItem key={pr.id} value={pr.id}>
+                        {pr.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {produtoId && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Formato</Label>
+                    <Select
+                      value={formato}
+                      onValueChange={(v) => {
+                        setFormato(v as FormatoProduto);
+                        setUnidade(unidadesDoFormato(v as FormatoProduto)[0]);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(produtoPorId(produtoId)?.formatos ?? []).map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {ROTULO_FORMATO[f]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dose-qtd">Quanto</Label>
+                      <Input
+                        id="dose-qtd"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        inputMode="decimal"
+                        value={quantidade}
+                        onChange={(e) => setQuantidade(e.target.value)}
+                        placeholder="Ex.: 10"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Medida</Label>
+                      <Select value={unidade} onValueChange={setUnidade}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(formato ? unidadesDoFormato(formato) : []).map((u) => (
+                            <SelectItem key={u} value={u}>
+                              {u}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {formato === "pronto_uso" && (
+                    <p className="text-xs text-muted-foreground">
+                      Pronto uso não se dilui. Vaso pequeno 5–7 borrifadas · médio 8–12 · grande 15–20.
+                    </p>
+                  )}
+                  {formato === "concentrado" && (
+                    <p className="text-xs text-muted-foreground">
+                      Concentrado dilui em água: 5 ml/L nas folhas (semanal) ou 10 ml/L no solo (a cada 15 dias).
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="quick-note">Observação (opcional)</Label>
             <Textarea
@@ -452,10 +611,12 @@ function PlantDetail() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
+            <Button variant="outline" onClick={limparDialog} disabled={salvandoRegistro}>
               Cancelar
             </Button>
-            <Button onClick={confirmQuickAction}>Confirmar</Button>
+            <Button onClick={confirmQuickAction} disabled={salvandoRegistro}>
+              {salvandoRegistro ? "Salvando…" : "Confirmar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

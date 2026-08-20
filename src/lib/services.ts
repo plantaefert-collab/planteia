@@ -3,7 +3,7 @@ import * as mockData from "./mock-data";
 import {
   plantsDb, tasksDb, timelineDb, usuarioAtual,
   diagnosesDb, carePlansDb,
-  type NovaPlanta, type DadosDiagnostico,
+  type NovaPlanta, type DadosDiagnostico, type NovoRegistroDiario,
 } from "./plants-db";
 import {
   mockPlants,
@@ -62,6 +62,11 @@ export const tasksService = {
 };
 
 export const timelineService = {
+  /** Registra um cuidado. Sem sessão não há onde gravar. */
+  async add(r: NovoRegistroDiario) {
+    if (!(await logado())) return null;
+    return timelineDb.add(r);
+  },
   async listByPlant(plantId: string) {
     if (await logado()) return timelineDb.listByPlant(plantId);
     await wait(80);

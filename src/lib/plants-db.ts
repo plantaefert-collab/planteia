@@ -108,7 +108,60 @@ export const plantsDb = {
   },
 };
 
+export type NovoRegistroDiario = {
+  plantId: string;
+  type: TimelineEntry["type"];
+  note?: string;
+  photo?: string;
+  /** Só para adubação: o que foi aplicado e quanto. */
+  productId?: string;
+  doseAmount?: number;
+  doseUnit?: string;
+  doseForm?: string;
+};
+
 export const timelineDb = {
+  /** Registra um cuidado no diário (rega, adubação, foto, observação). */
+  async add(r: NovoRegistroDiario): Promise<TimelineEntry> {
+    const userId = await usuarioAtual();
+    if (!userId) throw new Error("Entre na sua conta para registrar cuidados.");
+
+    const { data, error } = await sbNovo
+      .from("timeline_entries")
+      .insert({
+        user_id: userId,
+        plant_id: r.plantId,
+        type: r.type,
+        date: new Date().toISOString(),
+        note: r.note ?? null,
+        photo: r.photo ?? null,
+        product_id: r.productId ?? null,
+        dose_amount: r.doseAmount ?? null,
+        dose_unit: r.doseUnit ?? null,
+        dose_form: r.doseForm ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) throw error;
+
+    // Rega e adubação atualizam os atalhos da ficha da planta.
+    const agora = new Date().toISOString();
+    if (r.type === "rega") {
+      await supabase.from("plants").update({ last_watered: agora }).eq("id", r.plantId);
+    } else if (r.type === "adubacao") {
+      await supabase.from("plants").update({ last_fertilized: agora }).eq("id", r.plantId);
+    }
+
+    return {
+      id: data.id,
+      plantId: data.plant_id,
+      type: data.type,
+      date: data.date,
+      note: data.note ?? undefined,
+      photo: data.photo ?? undefined,
+    };
+  },
+
   async listByPlant(plantId: string): Promise<TimelineEntry[]> {
     const { data, error } = await sbNovo
       .from("timeline_entries")
