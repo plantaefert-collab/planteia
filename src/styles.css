@@ -243,30 +243,33 @@
 @keyframes page-leave {
   to {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-10px) scale(0.99);
   }
 }
 
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(16px) scale(0.99);
   }
 }
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: var(--duration-base);
   animation-timing-function: var(--ease-standard);
   animation-fill-mode: both;
 }
 
+/* Assimetria de propósito: a página que sai desocupa rápido, a que entra
+   assenta devagar. Simétrico lê como slide de apresentação. */
 ::view-transition-old(root) {
   animation-name: page-leave;
+  animation-duration: var(--duration-quick);
 }
 
 ::view-transition-new(root) {
   animation-name: page-enter;
+  animation-duration: var(--duration-enter);
 }
 
 /* A tab bar é moldura, não conteúdo: sai do snapshot da página e
