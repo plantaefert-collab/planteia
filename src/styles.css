@@ -102,46 +102,46 @@
   --duration-ambient: 3600ms;
 
   /* Warm cream off-white */
-  --background: oklch(0.985 0.012 95);
-  --foreground: oklch(0.24 0.03 155);
+  --background: oklch(0.957 0.012 79.8);
+  --foreground: oklch(0.298 0.019 142);
 
-  --card: oklch(0.995 0.008 95);
-  --card-foreground: oklch(0.24 0.03 155);
+  --card: oklch(0.994 0.006 84.6);
+  --card-foreground: oklch(0.298 0.019 142);
 
-  --popover: oklch(0.995 0.008 95);
-  --popover-foreground: oklch(0.24 0.03 155);
+  --popover: oklch(0.994 0.006 84.6);
+  --popover-foreground: oklch(0.298 0.019 142);
 
   /* Deep botanical green */
-  --primary: oklch(0.36 0.08 155);
-  --primary-foreground: oklch(0.985 0.012 95);
+  --primary: oklch(0.331 0.029 150.6);
+  --primary-foreground: oklch(0.957 0.012 79.8);
 
-  --secondary: oklch(0.94 0.02 120);
+  --secondary: oklch(0.935 0.025 129.9);
   --secondary-foreground: oklch(0.28 0.05 155);
 
-  --muted: oklch(0.955 0.012 95);
-  --muted-foreground: oklch(0.48 0.02 145);
+  --muted: oklch(0.945 0.014 82);
+  --muted-foreground: oklch(0.549 0.026 135.1);
 
   /* Discreet magenta */
-  --accent: oklch(0.62 0.19 350);
+  --accent: oklch(0.618 0.128 40.9);
   --accent-foreground: oklch(0.99 0.005 350);
 
   --destructive: oklch(0.58 0.22 27);
   --destructive-foreground: oklch(0.99 0.005 27);
 
-  --border: oklch(0.9 0.015 100);
-  --input: oklch(0.92 0.015 100);
-  --ring: oklch(0.5 0.1 155);
+  --border: oklch(0.875 0.022 83.3);
+  --input: oklch(0.893 0.018 83.3);
+  --ring: oklch(0.45 0.04 150.6);
 
-  --leaf: oklch(0.36 0.08 155);
-  --leaf-soft: oklch(0.93 0.04 150);
-  --bloom: oklch(0.62 0.19 350);
-  --bloom-soft: oklch(0.94 0.05 350);
-  --warning: oklch(0.72 0.15 70);
-  --warning-soft: oklch(0.95 0.05 80);
-  --success: oklch(0.62 0.13 150);
-  --success-soft: oklch(0.94 0.05 150);
+  --leaf: oklch(0.331 0.029 150.6);
+  --leaf-soft: oklch(0.935 0.025 129.9);
+  --bloom: oklch(0.618 0.128 40.9);
+  --bloom-soft: oklch(0.928 0.025 49.7);
+  --warning: oklch(0.727 0.124 88.8);
+  --warning-soft: oklch(0.942 0.033 88.1);
+  --success: oklch(0.678 0.08 130.2);
+  --success-soft: oklch(0.935 0.025 129.9);
   --success-dark: oklch(0.34 0.07 150);
-  --sand: oklch(0.96 0.02 90);
+  --sand: oklch(0.957 0.012 79.8);
 
   --chart-1: oklch(0.5 0.12 155);
   --chart-2: oklch(0.62 0.19 350);
@@ -150,9 +150,9 @@
   --chart-5: oklch(0.7 0.13 130);
 
   --sidebar: oklch(0.98 0.012 95);
-  --sidebar-foreground: oklch(0.24 0.03 155);
-  --sidebar-primary: oklch(0.36 0.08 155);
-  --sidebar-primary-foreground: oklch(0.985 0.012 95);
+  --sidebar-foreground: oklch(0.298 0.019 142);
+  --sidebar-primary: oklch(0.331 0.029 150.6);
+  --sidebar-primary-foreground: oklch(0.957 0.012 79.8);
   --sidebar-accent: oklch(0.94 0.03 150);
   --sidebar-accent-foreground: oklch(0.28 0.05 155);
   --sidebar-border: oklch(0.9 0.015 100);
@@ -169,35 +169,38 @@
   --elev-lg: 0 4px 8px -4px rgb(0 0 0 / 0.5), 0 18px 40px -14px rgb(0 0 0 / 0.65);
   --elev-xl: 0 8px 16px -8px rgb(0 0 0 / 0.55), 0 32px 64px -24px rgb(0 0 0 / 0.75);
 
-  --background: oklch(0.18 0.02 155);
-  --foreground: oklch(0.97 0.012 95);
-  --card: oklch(0.22 0.025 155);
-  --card-foreground: oklch(0.97 0.012 95);
-  --popover: oklch(0.22 0.025 155);
-  --popover-foreground: oklch(0.97 0.012 95);
-  --primary: oklch(0.75 0.1 150);
-  --primary-foreground: oklch(0.18 0.02 155);
-  --secondary: oklch(0.28 0.03 155);
-  --secondary-foreground: oklch(0.97 0.012 95);
-  --muted: oklch(0.26 0.02 155);
-  --muted-foreground: oklch(0.7 0.02 145);
-  --accent: oklch(0.68 0.18 350);
-  --accent-foreground: oklch(0.99 0.005 350);
-  --destructive: oklch(0.65 0.2 27);
-  --destructive-foreground: oklch(0.99 0.005 27);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.6 0.1 150);
-  --leaf: oklch(0.75 0.1 150);
-  --leaf-soft: oklch(0.3 0.05 150);
-  --bloom: oklch(0.68 0.18 350);
-  --bloom-soft: oklch(0.32 0.08 350);
-  --warning: oklch(0.75 0.15 70);
-  --warning-soft: oklch(0.32 0.06 70);
-  --success: oklch(0.7 0.13 150);
-  --success-soft: oklch(0.3 0.06 150);
-  --success-dark: oklch(0.86 0.09 150);
-  --sand: oklch(0.28 0.02 90);
+  /* Escuro derivado, não especificado: o conceito Sprout só define o tema
+     claro. A base é o Ink escurecido, os textos vão para o Sage, e o
+     terracotta clareia para não sumir sobre fundo escuro. */
+  --background: oklch(0.185 0.012 145);
+  --foreground: oklch(0.925 0.018 130);
+  --card: oklch(0.235 0.014 145);
+  --card-foreground: oklch(0.925 0.018 130);
+  --popover: oklch(0.235 0.014 145);
+  --popover-foreground: oklch(0.925 0.018 130);
+  --primary: oklch(0.72 0.075 130.2);
+  --primary-foreground: oklch(0.185 0.012 145);
+  --secondary: oklch(0.29 0.018 140);
+  --secondary-foreground: oklch(0.925 0.018 130);
+  --muted: oklch(0.255 0.014 145);
+  --muted-foreground: oklch(0.705 0.024 133);
+  --accent: oklch(0.7 0.115 42);
+  --accent-foreground: oklch(0.185 0.012 145);
+  --destructive: oklch(0.65 0.17 32);
+  --destructive-foreground: oklch(0.975 0.008 40);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.65 0.06 135);
+  --leaf: oklch(0.72 0.075 130.2);
+  --leaf-soft: oklch(0.305 0.03 133);
+  --bloom: oklch(0.7 0.115 42);
+  --bloom-soft: oklch(0.3 0.045 45);
+  --warning: oklch(0.775 0.11 88.8);
+  --warning-soft: oklch(0.31 0.045 88);
+  --success: oklch(0.735 0.078 130.2);
+  --success-soft: oklch(0.3 0.035 131);
+  --success-dark: oklch(0.865 0.055 130);
+  --sand: oklch(0.275 0.014 82);
 }
 
 @layer base {
@@ -372,5 +375,45 @@ nav[aria-label="Navegação principal"] {
       min-height: 44px;
       min-width: 44px;
     }
+  }
+}
+
+/* ------------------------------------------------------------
+   M-005 — varredura do visor da câmera
+
+   Comunica que o app está lendo o quadro, não só exibindo. Sem isso
+   o visor parece uma foto parada e o usuário não sabe se algo acontece.
+
+   Loop lento de propósito: rápido demais vira alarme, e a captura
+   ainda depende de o quadro estar bom.
+   ------------------------------------------------------------ */
+
+@keyframes varredura {
+  0% {
+    top: 4%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 96%;
+    opacity: 0;
+  }
+}
+
+.varredura {
+  animation: varredura 2.6s var(--ease-calm) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* O movimento some, o sinal de que está lendo permanece: a linha fica
+     parada no centro em vez de desaparecer. */
+  .varredura {
+    animation: none;
+    top: 50%;
   }
 }
