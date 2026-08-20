@@ -719,3 +719,42 @@ export const chatDb = {
     await sbNovo.from("chat_messages").delete().eq("user_id", userId);
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloco 8 — catálogo de produtos
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ProdutoCatalogo = {
+  id: string;
+  name: string;
+  category: "base" | "especifico" | "outro";
+  goal?: string;
+  moment?: string;
+  formats: string[];
+  url?: string;
+  image?: string;
+};
+
+export const LOJA_URL = "https://www.plantaefert.com.br";
+
+export const productsDb = {
+  /** Catálogo é público: não depende de sessão. */
+  async list(): Promise<ProdutoCatalogo[]> {
+    const { data, error } = await sbNovo
+      .from("products")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+    return ((data ?? []) as Record<string, any>[]).map((r) => ({
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      goal: r.goal ?? undefined,
+      moment: r.moment ?? undefined,
+      formats: r.formats ?? [],
+      url: r.url ?? undefined,
+      image: r.image ?? undefined,
+    }));
+  },
+};
