@@ -47,6 +47,12 @@ export type NovaPlanta = {
 };
 
 /** "hoje", "amanhã", "atrasada", "em 5 dias" — como a pessoa pensa a data. */
+// ATENÇÃO se algum dia esta lista ganhar loader/SSR: `new Date()` aqui é a
+// hora de QUEM executa. Hoje só o navegador executa (a lista roda por useQuery
+// sem loader, o servidor entrega esqueleto), então "hoje" é o hoje do usuário.
+// Se o servidor passar a calcular isto, ele roda em UTC — das 21h à meia-noite
+// no Brasil ele já virou o dia, e "hoje" viraria "atrasada 1 dia" na tela.
+// A correção não é evitar a corrida da meia-noite: é fixar o fuso America/Sao_Paulo.
 function quandoLabel(iso: string): string {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
