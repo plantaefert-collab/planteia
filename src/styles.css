@@ -389,24 +389,22 @@ nav[aria-label="Navegação principal"] {
    ------------------------------------------------------------ */
 
 @keyframes varredura {
-  0% {
-    top: 4%;
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  88% {
-    opacity: 1;
-  }
+  0%,
   100% {
-    top: 96%;
-    opacity: 0;
+    top: 6%;
+  }
+  50% {
+    top: 94%;
   }
 }
 
 .varredura {
-  animation: varredura 2.6s var(--ease-calm) infinite;
+  /* Ida e volta num ciclo só: 0% e 100% no topo, 50% embaixo. A versão
+     anterior ia até o fim e saltava de volta — lia como falha, não como
+     varredura. O ease-in-out desacelera nas pontas, e é isso que faz o
+     retorno parecer um movimento e não um pulo. */
+  animation: varredura 3.4s var(--ease-calm) infinite;
+  opacity: 0.9;
 }
 
 @media (prefers-reduced-motion: reduce) {
